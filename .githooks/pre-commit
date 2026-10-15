@@ -1,5 +1,7 @@
 #!/bin/sh
 # ตรวจ lint และ build ก่อน commit ทุกครั้ง
+# เผื่อ shell ยังไม่มี Node.js ใน PATH (Windows)
+command -v npm >/dev/null 2>&1 || export PATH="/c/Program Files/nodejs:$PATH"
 echo "Running lint + build before commit..."
 npm run check || {
   echo "Lint/build failed - commit aborted."
