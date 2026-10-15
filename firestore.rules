@@ -4,6 +4,10 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null;
     }
+    // ครูเข้าใช้งานด้วยการพิมพ์ชื่อ (Firebase Anonymous Auth) ไม่ต้องใช้รหัสผ่าน
+    function isNameLogin() {
+      return request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
     function myRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
@@ -17,11 +21,15 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/reports/$(id)).data;
     }
 
-    // ผู้ใช้: สมัครใหม่ได้สถานะ pending เท่านั้น ผู้ดูแลเป็นคนกำหนดบทบาท
+    // ผู้ใช้: เข้าด้วยชื่อได้สถานะ teacher ทันที, เข้าด้วย Google ได้ pending ให้ผู้ดูแลกำหนดบทบาท
     match /users/{uid} {
-      allow read: if signedIn();
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow create: if signedIn() && request.auth.uid == uid
-        && request.resource.data.role == 'pending';
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 100
+        && (request.resource.data.role == 'pending'
+            || (isNameLogin() && request.resource.data.role == 'teacher'));
       allow update: if isAdmin()
         || (request.auth.uid == uid
             && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));

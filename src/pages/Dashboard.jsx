@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { listMyReports, listReportsBetween, listSchedulesBetween } from '../data'
 import { shiftLabel } from '../constants'
-import { errorMessage, formatThaiDate, parseDateStr, toDateStr, todayStr } from '../utils'
+import { errorMessage, formatThaiDate, parseDateStr, sameName, toDateStr, todayStr } from '../utils'
 import StatusBadge from '../components/StatusBadge'
 
 export default function Dashboard() {
@@ -33,11 +33,12 @@ export default function Dashboard() {
     load()
   }, [today, user.uid, isAdmin])
 
+  const isMe = (t) => sameName(t.name, profile.displayName)
   const todayTeachers = schedules[today]?.teachers ?? []
   const myUpcoming = Object.values(schedules)
-    .filter((s) => s.date > today && s.teachers?.some((t) => t.uid === user.uid))
+    .filter((s) => s.date > today && s.teachers?.some(isMe))
     .sort((a, b) => a.date.localeCompare(b.date))
-  const onDutyToday = todayTeachers.some((t) => t.uid === user.uid)
+  const onDutyToday = todayTeachers.some(isMe)
 
   return (
     <div className="stack">

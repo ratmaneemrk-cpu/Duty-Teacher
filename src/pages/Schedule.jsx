@@ -3,21 +3,39 @@ import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc } from 'fi
 import { db } from '../firebase'
 import { useAuth } from '../auth-context'
 import { listSchedulesBetween } from '../data'
-import { errorMessage, daysInMonth, formatThaiDate, formatThaiMonth, monthRange, parseDateStr, thisMonthStr, todayStr } from '../utils'
+import { errorMessage, daysInMonth, formatThaiDate, formatThaiMonth, monthRange, parseDateStr, sameName, thisMonthStr, todayStr } from '../utils'
 
 function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
-  const [selected, setSelected] = useState(() => new Set((current?.teachers ?? []).map((t) => t.uid)))
+  // เลือกครูด้วยชื่อ เพราะครูเข้าใช้งานด้วยชื่อ และอาจยังไม่เคยเข้าระบบ
+  const [selected, setSelected] = useState(() => new Set((current?.teachers ?? []).map((t) => t.name)))
+  const [names, setNames] = useState(() => {
+    const list = staff.map((u) => u.displayName)
+    ;(current?.teachers ?? []).forEach((t) => {
+      if (!list.some((n) => sameName(n, t.name))) list.push(t.name)
+    })
+    return list
+  })
+  const [newName, setNewName] = useState('')
   const [note, setNote] = useState(current?.note ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const toggle = (uid) =>
+  const toggle = (name) =>
     setSelected((s) => {
       const next = new Set(s)
-      if (next.has(uid)) next.delete(uid)
-      else next.add(uid)
+      if (next.has(name)) next.delete(name)
+      else next.add(name)
       return next
     })
+
+  const addName = () => {
+    const name = newName.trim().replace(/\s+/g, ' ')
+    if (!name) return
+    const existing = names.find((n) => sameName(n, name))
+    if (!existing) setNames((list) => [...list, name])
+    setSelected((s) => new Set(s).add(existing ?? name))
+    setNewName('')
+  }
 
   const save = async () => {
     setBusy(true)
@@ -30,7 +48,9 @@ function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
       } else {
         const data = {
           date,
-          teachers: staff.filter((u) => selected.has(u.id)).map((u) => ({ uid: u.id, name: u.displayName })),
+          teachers: names
+            .filter((n) => selected.has(n))
+            .map((name) => ({ uid: staff.find((u) => sameName(u.displayName, name))?.id ?? '', name })),
           note: note.trim(),
           updatedAt: serverTimestamp(),
         }
@@ -46,12 +66,27 @@ function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
   return (
     <div className="editor stack">
       <div className="checklist">
-        {staff.map((u) => (
-          <label key={u.id} className="check">
-            <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggle(u.id)} />
-            <span>{u.displayName}</span>
+        {names.map((name) => (
+          <label key={name} className="check">
+            <input type="checkbox" checked={selected.has(name)} onChange={() => toggle(name)} />
+            <span>{name}</span>
           </label>
         ))}
+      </div>
+      <div className="actions">
+        <input
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              addName()
+            }
+          }}
+          placeholder="พิมพ์ชื่อครูที่ไม่มีในรายการ"
+        />
+        <button type="button" className="btn btn-light btn-sm" onClick={addName}>เพิ่มชื่อ</button>
       </div>
       <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="หมายเหตุ (ถ้ามี)" />
       {error && <p className="error">{error}</p>}
@@ -64,7 +99,7 @@ function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
 }
 
 export default function Schedule() {
-  const { user, isAdmin } = useAuth()
+  const { profile, isAdmin } = useAuth()
   const [month, setMonth] = useState(thisMonthStr)
   const [schedules, setSchedules] = useState({})
   const [staff, setStaff] = useState([])
@@ -93,6 +128,8 @@ export default function Schedule() {
           snap.docs
             .map((d) => ({ id: d.id, ...d.data() }))
             .filter((u) => u.role === 'teacher' || u.role === 'admin')
+            // ครูคนเดียวอาจเข้าใช้งานจากหลายเครื่อง แสดงชื่อซ้ำครั้งเดียว
+            .filter((u, i, all) => all.findIndex((o) => sameName(o.displayName, u.displayName)) === i)
             .sort((a, b) => a.displayName.localeCompare(b.displayName, 'th')),
         ),
       )
@@ -109,10 +146,9 @@ export default function Schedule() {
     setEditing(null)
   }
 
+  const isMe = (t) => sameName(t.name, profile.displayName)
   const days = month ? daysInMonth(month) : []
-  const shownDays = onlyMine
-    ? days.filter((d) => schedules[d]?.teachers?.some((t) => t.uid === user.uid))
-    : days
+  const shownDays = onlyMine ? days.filter((d) => schedules[d]?.teachers?.some(isMe)) : days
 
   return (
     <div className="card stack">
@@ -135,7 +171,7 @@ export default function Schedule() {
           const s = schedules[date]
           const dow = parseDateStr(date).getDay()
           const weekend = dow === 0 || dow === 6
-          const mine = s?.teachers?.some((t) => t.uid === user.uid)
+          const mine = s?.teachers?.some(isMe)
           const cls = ['day', weekend && 'weekend', date === today && 'today', mine && 'mine']
             .filter(Boolean)
             .join(' ')

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { onAuthStateChanged, signInAnonymously, signInWithPopup, signOut } from 'firebase/auth'
 import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db, googleProvider } from './firebase'
 import { AuthContext } from './auth-context'
@@ -10,6 +10,8 @@ export default function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // ชื่อที่ครูพิมพ์ตอนเข้าใช้งาน ใช้สร้างโปรไฟล์หลัง signInAnonymously สำเร็จ
+  const nameForNewUser = useRef('')
 
   useEffect(() => {
     let unsubProfile = () => {}
@@ -28,13 +30,30 @@ export default function AuthProvider({ children }) {
         const ref = doc(db, 'users', u.uid)
         const snap = await getDoc(ref)
         if (!snap.exists()) {
-          await setDoc(ref, {
-            displayName: u.displayName || u.email,
-            email: u.email,
-            photoURL: u.photoURL || '',
-            role: 'pending',
-            createdAt: serverTimestamp(),
-          })
+          if (u.isAnonymous) {
+            // ครูที่เข้าด้วยชื่อ ได้สิทธิ์ครูทันทีโดยไม่ต้องรออนุมัติ
+            const name = nameForNewUser.current
+            nameForNewUser.current = ''
+            if (!name) {
+              await signOut(auth)
+              return
+            }
+            await setDoc(ref, {
+              displayName: name,
+              email: '',
+              photoURL: '',
+              role: 'teacher',
+              createdAt: serverTimestamp(),
+            })
+          } else {
+            await setDoc(ref, {
+              displayName: u.displayName || u.email,
+              email: u.email,
+              photoURL: u.photoURL || '',
+              role: 'pending',
+              createdAt: serverTimestamp(),
+            })
+          }
         }
         unsubProfile = onSnapshot(
           ref,
@@ -67,6 +86,10 @@ export default function AuthProvider({ children }) {
       isAdmin: profile?.role === 'admin',
       isStaff: profile?.role === 'teacher' || profile?.role === 'admin',
       login: () => signInWithPopup(auth, googleProvider),
+      loginWithName: (name) => {
+        nameForNewUser.current = name
+        return signInAnonymously(auth)
+      },
       logout: () => signOut(auth),
     }),
     [user, profile, loading, error],

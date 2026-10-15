@@ -4,9 +4,15 @@ import { useAuth } from '../auth-context'
 import { ROLES, SCHOOL_NAME } from '../constants'
 
 export default function Layout() {
-  const { profile, isAdmin, logout } = useAuth()
+  const { user, profile, isAdmin, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const close = () => setMenuOpen(false)
+
+  const handleLogout = () => {
+    // ผู้ใช้ที่เข้าด้วยชื่อ ถ้าออกแล้วจะแก้ไขรายงานที่ส่งจากเครื่องนี้ไม่ได้อีก
+    if (user.isAnonymous && !window.confirm('ออกจากระบบแล้วจะแก้ไขรายงานที่ส่งไปแล้วไม่ได้ ต้องการออกใช่หรือไม่?')) return
+    logout()
+  }
 
   return (
     <div className="app">
@@ -37,7 +43,7 @@ export default function Layout() {
               {profile.displayName}
               <small> ({ROLES[profile.role]})</small>
             </span>
-            <button className="btn btn-light btn-sm" onClick={logout}>ออกจากระบบ</button>
+            <button className="btn btn-light btn-sm" onClick={handleLogout}>ออกจากระบบ</button>
           </div>
         </nav>
       </header>

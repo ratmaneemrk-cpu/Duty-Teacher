@@ -55,7 +55,10 @@ export default function Users() {
   return (
     <div className="card stack">
       <h1>จัดการผู้ใช้</h1>
-      <p className="muted">ครูที่เข้าสู่ระบบครั้งแรกจะมีสถานะ &quot;รออนุมัติ&quot; ให้เปลี่ยนเป็น &quot;ครู&quot; เพื่อเปิดสิทธิ์ใช้งาน</p>
+      <p className="muted">
+        ครูที่เข้าใช้งานด้วยชื่อจะได้สิทธิ์ &quot;ครู&quot; ทันที (หนึ่งรายการต่อหนึ่งเครื่อง)
+        ส่วนผู้ที่เข้าด้วย Google จะมีสถานะ &quot;รออนุมัติ&quot; ให้เปลี่ยนสิทธิ์เพื่อเปิดใช้งาน
+      </p>
       {error && <p className="error">{error}</p>}
       {!users && !error && <p>กำลังโหลด...</p>}
       {users && (
@@ -73,7 +76,7 @@ export default function Users() {
               {users.map((u) => (
                 <tr key={u.id} className={u.role === 'pending' ? 'row-pending' : ''}>
                   <td>{u.displayName}</td>
-                  <td>{u.email}</td>
+                  <td>{u.email || <span className="muted">เข้าด้วยชื่อ</span>}</td>
                   <td>
                     <select value={u.role} onChange={(e) => changeRole(u, e.target.value)}>
                       {Object.entries(ROLES).map(([k, v]) => (

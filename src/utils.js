@@ -90,6 +90,12 @@ export function downloadCsv(filename, rows) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
 
+/** เทียบชื่อครูโดยไม่สนช่องว่างที่เกินมา (ครูเข้าใช้งานด้วยชื่อ จึงใช้ชื่อจับคู่กับตารางเวร) */
+export function sameName(a, b) {
+  const norm = (s) => (s ?? '').trim().replace(/\s+/g, ' ')
+  return Boolean(norm(a)) && norm(a) === norm(b)
+}
+
 export function errorMessage(err) {
   if (!err) return ''
   if (err.code === 'permission-denied') return 'ไม่มีสิทธิ์เข้าถึงข้อมูลนี้'

@@ -186,6 +186,10 @@ code {
   gap: 0.75rem;
 }
 
+.login-card form {
+  width: 100%;
+}
+
 .hero {
   display: flex;
   flex-wrap: wrap;
