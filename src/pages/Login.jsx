@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../auth-context'
 import { SCHOOL_NAME } from '../constants'
+import { ROSTER_NAMES } from '../roster'
 
 export default function Login() {
   const { login, loginWithName } = useAuth()
@@ -42,11 +43,17 @@ export default function Login() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="เช่น ครูสมชาย ใจดี"
+              placeholder="พิมพ์หรือเลือกชื่อจากรายการ"
+              list="roster-names"
               maxLength={100}
               autoFocus
               required
             />
+            <datalist id="roster-names">
+              {ROSTER_NAMES.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
           </label>
           <button type="submit" className="btn btn-primary btn-lg" disabled={busy || !name.trim()}>
             {busy ? 'กำลังเข้าใช้งาน...' : 'เข้าใช้งาน'}

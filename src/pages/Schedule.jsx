@@ -3,15 +3,16 @@ import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc } from 'fi
 import { db } from '../firebase'
 import { useAuth } from '../auth-context'
 import { listSchedulesBetween } from '../data'
+import { ROSTER_NAMES, rosterTeachers, scheduleFor } from '../roster'
 import { errorMessage, daysInMonth, formatThaiDate, formatThaiMonth, monthRange, parseDateStr, sameName, thisMonthStr, todayStr } from '../utils'
 
 function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
   // เลือกครูด้วยชื่อ เพราะครูเข้าใช้งานด้วยชื่อ และอาจยังไม่เคยเข้าระบบ
   const [selected, setSelected] = useState(() => new Set((current?.teachers ?? []).map((t) => t.name)))
   const [names, setNames] = useState(() => {
-    const list = staff.map((u) => u.displayName)
-    ;(current?.teachers ?? []).forEach((t) => {
-      if (!list.some((n) => sameName(n, t.name))) list.push(t.name)
+    const list = (current?.teachers ?? []).map((t) => t.name)
+    ;[...ROSTER_NAMES, ...staff.map((u) => u.displayName)].forEach((name) => {
+      if (!list.some((n) => sameName(n, name))) list.push(name)
     })
     return list
   })
@@ -41,22 +42,34 @@ function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
     setBusy(true)
     setError('')
     try {
-      const ref = doc(db, 'schedules', date)
-      if (selected.size === 0 && !note.trim()) {
-        await deleteDoc(ref)
-        onSaved(date, null)
-      } else {
-        const data = {
-          date,
-          teachers: names
-            .filter((n) => selected.has(n))
-            .map((name) => ({ uid: staff.find((u) => sameName(u.displayName, name))?.id ?? '', name })),
-          note: note.trim(),
-          updatedAt: serverTimestamp(),
-        }
-        await setDoc(ref, data)
-        onSaved(date, data)
+      const head = rosterTeachers(date).find((t) => t.head)?.name
+      const data = {
+        date,
+        teachers: names
+          .filter((n) => selected.has(n))
+          .map((name) => ({
+            uid: staff.find((u) => sameName(u.displayName, name))?.id ?? '',
+            name,
+            head: sameName(name, head),
+          })),
+        note: note.trim(),
+        updatedAt: serverTimestamp(),
       }
+      await setDoc(doc(db, 'schedules', date), data)
+      onSaved(date, data)
+    } catch (err) {
+      setError(errorMessage(err))
+      setBusy(false)
+    }
+  }
+
+  // ลบการจัดเวรเฉพาะวัน กลับไปใช้ตารางประจำสัปดาห์
+  const revert = async () => {
+    setBusy(true)
+    setError('')
+    try {
+      await deleteDoc(doc(db, 'schedules', date))
+      onSaved(date, null)
     } catch (err) {
       setError(errorMessage(err))
       setBusy(false)
@@ -88,9 +101,13 @@ function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
         />
         <button type="button" className="btn btn-light btn-sm" onClick={addName}>เพิ่มชื่อ</button>
       </div>
-      <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="หมายเหตุ (ถ้ามี)" />
+      <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="หมายเหตุ (ถ้ามี) เช่น วันหยุด / สลับเวร" />
+      <p className="muted small">การบันทึกจะใช้แทนตารางประจำสัปดาห์เฉพาะวันนี้ ถ้าไม่เลือกครูเลย ถือว่าวันนี้ไม่มีเวร</p>
       {error && <p className="error">{error}</p>}
       <div className="actions">
+        {current?.override && (
+          <button className="btn btn-light btn-sm" onClick={revert} disabled={busy}>ใช้ตามตารางประจำสัปดาห์</button>
+        )}
         <button className="btn btn-light btn-sm" onClick={onCancel} disabled={busy}>ยกเลิก</button>
         <button className="btn btn-primary btn-sm" onClick={save} disabled={busy}>บันทึก</button>
       </div>
@@ -148,7 +165,7 @@ export default function Schedule() {
 
   const isMe = (t) => sameName(t.name, profile.displayName)
   const days = month ? daysInMonth(month) : []
-  const shownDays = onlyMine ? days.filter((d) => schedules[d]?.teachers?.some(isMe)) : days
+  const shownDays = onlyMine ? days.filter((d) => scheduleFor(d, schedules).teachers.some(isMe)) : days
 
   return (
     <div className="card stack">
@@ -168,17 +185,20 @@ export default function Schedule() {
 
       <ul className="schedule">
         {shownDays.map((date) => {
-          const s = schedules[date]
+          const s = scheduleFor(date, schedules)
           const dow = parseDateStr(date).getDay()
           const weekend = dow === 0 || dow === 6
-          const mine = s?.teachers?.some(isMe)
+          const mine = s.teachers.some(isMe)
           const cls = ['day', weekend && 'weekend', date === today && 'today', mine && 'mine']
             .filter(Boolean)
             .join(' ')
           return (
             <li key={date} className={cls}>
               <div className="day-head">
-                <span className="day-date">{formatThaiDate(date)}</span>
+                <span className="day-date">
+                  {formatThaiDate(date)}
+                  {s.override && <span className="muted small"> (จัดเวรเฉพาะวัน)</span>}
+                </span>
                 {isAdmin && editing !== date && (
                   <button className="btn btn-light btn-sm" onClick={() => setEditing(date)}>จัดเวร</button>
                 )}
@@ -193,8 +213,18 @@ export default function Schedule() {
                 />
               ) : (
                 <div className="day-body">
-                  {s?.teachers?.length ? s.teachers.map((t) => t.name).join(', ') : <span className="muted">-</span>}
-                  {s?.note && <div className="note">{s.note}</div>}
+                  {s.teachers.length ? (
+                    s.teachers.map((t, i) => (
+                      <span key={t.name}>
+                        {i > 0 && ', '}
+                        {t.name}
+                        {t.head && <strong> (หัวหน้าครูเวร)</strong>}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="muted">-</span>
+                  )}
+                  {s.note && <div className="note">{s.note}</div>}
                 </div>
               )}
             </li>

@@ -90,9 +90,22 @@ export function downloadCsv(filename, rows) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
 
-/** เทียบชื่อครูโดยไม่สนช่องว่างที่เกินมา (ครูเข้าใช้งานด้วยชื่อ จึงใช้ชื่อจับคู่กับตารางเวร) */
+// คำนำหน้าชื่อที่ไม่ใช้ในการเทียบชื่อ (นางสาว ต้องมาก่อน นาง)
+const TITLE = /^(ว่าที่\s*(ร\.?\s*ต\.?|ร้อยตรี)\s*(หญิง)?|นางสาว|น\.\s*ส\.|นาง|นาย|ครู|คุณ)\s*/
+
+/**
+ * เทียบชื่อครูโดยไม่สนคำนำหน้าและช่องว่าง (ครูเข้าใช้งานด้วยชื่อ จึงใช้ชื่อจับคู่กับตารางเวร)
+ * เช่น "นายกมล ไสโยธา" ตรงกับ "กมล  ไสโยธา"
+ */
 export function sameName(a, b) {
-  const norm = (s) => (s ?? '').trim().replace(/\s+/g, ' ')
+  const norm = (s) => {
+    let n = (s ?? '').trim()
+    for (let prev; prev !== n; ) {
+      prev = n
+      n = n.replace(TITLE, '')
+    }
+    return n.replace(/\s+/g, '')
+  }
   return Boolean(norm(a)) && norm(a) === norm(b)
 }
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { listMyReports, listReportsBetween, listSchedulesBetween } from '../data'
 import { shiftLabel } from '../constants'
+import { scheduleFor } from '../roster'
 import { errorMessage, formatThaiDate, parseDateStr, sameName, toDateStr, todayStr } from '../utils'
 import StatusBadge from '../components/StatusBadge'
 
@@ -34,10 +35,13 @@ export default function Dashboard() {
   }, [today, user.uid, isAdmin])
 
   const isMe = (t) => sameName(t.name, profile.displayName)
-  const todayTeachers = schedules[today]?.teachers ?? []
-  const myUpcoming = Object.values(schedules)
-    .filter((s) => s.date > today && s.teachers?.some(isMe))
-    .sort((a, b) => a.date.localeCompare(b.date))
+  const todaySchedule = scheduleFor(today, schedules)
+  const todayTeachers = todaySchedule.teachers
+  const myUpcoming = Array.from({ length: 14 }, (_, i) => {
+    const d = parseDateStr(today)
+    d.setDate(d.getDate() + i + 1)
+    return scheduleFor(toDateStr(d), schedules)
+  }).filter((s) => s.teachers.some(isMe))
   const onDutyToday = todayTeachers.some(isMe)
 
   return (
@@ -59,13 +63,16 @@ export default function Dashboard() {
           {todayTeachers.length ? (
             <ul className="plain-list">
               {todayTeachers.map((t) => (
-                <li key={t.uid}>{t.name}</li>
+                <li key={t.name}>
+                  {t.name}
+                  {t.head && <strong> (หัวหน้าครูเวร)</strong>}
+                </li>
               ))}
             </ul>
           ) : (
-            <p className="muted">ยังไม่มีการจัดเวรสำหรับวันนี้</p>
+            <p className="muted">วันนี้ไม่มีเวร</p>
           )}
-          {schedules[today]?.note && <p className="note">หมายเหตุ: {schedules[today].note}</p>}
+          {todaySchedule.note && <p className="note">หมายเหตุ: {todaySchedule.note}</p>}
         </section>
 
         <section className="card">
