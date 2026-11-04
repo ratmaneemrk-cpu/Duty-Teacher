@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { MAX_PHOTOS } from '../constants'
 import { compressImage, errorMessage } from '../utils'
 
@@ -6,14 +7,25 @@ import { compressImage, errorMessage } from '../utils'
  * photos: [{ id?, data }] — รูปที่มี id คือรูปเดิมในฐานข้อมูล
  */
 export default function PhotoPicker({ photos, onChange, onError, disabled }) {
+  const [processing, setProcessing] = useState(false)
+  const [notice, setNotice] = useState('')
+
   const addPhotos = async (e) => {
-    const files = [...e.target.files].slice(0, MAX_PHOTOS - photos.length)
+    const all = [...e.target.files]
+    const room = MAX_PHOTOS - photos.length
+    const files = all.slice(0, room)
     e.target.value = ''
+    setNotice(all.length > room ? `เพิ่มได้อีก ${room} รูป ระบบใช้ ${room} รูปแรกที่เลือก` : '')
+    setProcessing(true)
+    const added = []
     try {
-      const datas = await Promise.all(files.map((f) => compressImage(f)))
-      onChange([...photos, ...datas.map((data) => ({ data }))])
+      // ย่อทีละรูป เพื่อไม่ให้มือถือหน่วยความจำเต็มเมื่อเลือกรูปใหญ่หลายรูปพร้อมกัน
+      for (const f of files) added.push({ data: await compressImage(f) })
     } catch (err) {
       onError(errorMessage(err))
+    } finally {
+      if (added.length) onChange([...photos, ...added])
+      setProcessing(false)
     }
   }
 
@@ -36,13 +48,15 @@ export default function PhotoPicker({ photos, onChange, onError, disabled }) {
             )}
           </div>
         ))}
-        {!disabled && photos.length < MAX_PHOTOS && (
+        {processing && <div className="photo photo-add">กำลังย่อรูป...</div>}
+        {!disabled && !processing && photos.length < MAX_PHOTOS && (
           <label className="photo photo-add">
             <input type="file" accept="image/*" multiple onChange={addPhotos} hidden />
             + เพิ่มรูป
           </label>
         )}
       </div>
+      {notice && <p className="muted small">{notice}</p>}
     </div>
   )
 }

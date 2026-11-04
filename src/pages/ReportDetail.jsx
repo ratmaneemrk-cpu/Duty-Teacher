@@ -119,6 +119,9 @@ export default function ReportDetail() {
         <h2>ข้อเสนอแนะ</h2>
         <p className="pre">{report.suggestions || '-'}</p>
 
+        {report.photosRemoved && photos.length === 0 && (
+          <p className="muted small">รูปภาพของรายงานนี้ถูกลบแล้วเพื่อประหยัดพื้นที่</p>
+        )}
         {photos.length > 0 && (
           <>
             <h2>รูปภาพประกอบ</h2>

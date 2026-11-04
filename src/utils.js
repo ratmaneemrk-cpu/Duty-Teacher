@@ -53,26 +53,45 @@ export function daysInMonth(ym) {
   return days
 }
 
-/** ย่อรูปเป็น JPEG (data URL) เพื่อเก็บใน Firestore ได้ (จำกัด 1MB ต่อเอกสาร) */
-export function compressImage(file, maxSize = 1024, quality = 0.7) {
+// ขนาด data URL สูงสุดของรูปหนึ่งรูป (เอกสาร Firestore จำกัด 1MB)
+const MAX_IMAGE_CHARS = 350 * 1024
+
+function loadImage(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
     img.onload = () => {
-      const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
       URL.revokeObjectURL(url)
-      resolve(canvas.toDataURL('image/jpeg', quality))
+      resolve(img)
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'))
+      reject(new Error(`ไม่สามารถอ่านไฟล์รูปภาพ ${file.name} ได้ (รองรับ JPG, PNG)`))
     }
     img.src = url
   })
+}
+
+/**
+ * ย่อรูปเป็น JPEG (data URL) เพื่อเก็บใน Firestore ได้ (จำกัด 1MB ต่อเอกสาร)
+ * ด้านยาว 800px ประมาณ 100KB ต่อรูป เพราะครูแนบรูปทุกวัน และแผนฟรีเก็บได้ 1GB
+ * ถ้ายังใหญ่เกิน ลดคุณภาพและขนาดลงเรื่อยๆ จนพอดี
+ */
+export async function compressImage(file, maxSize = 800, quality = 0.65) {
+  const img = await loadImage(file)
+  const canvas = document.createElement('canvas')
+  let size = maxSize
+  let q = quality
+  for (;;) {
+    const scale = Math.min(1, size / Math.max(img.width, img.height))
+    canvas.width = Math.round(img.width * scale)
+    canvas.height = Math.round(img.height * scale)
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+    const data = canvas.toDataURL('image/jpeg', q)
+    if (data.length <= MAX_IMAGE_CHARS || size <= 400) return data
+    if (q > 0.5) q -= 0.1
+    else size = Math.round(size * 0.8)
+  }
 }
 
 /** ดาวน์โหลดตารางเป็น CSV (ใส่ BOM ให้ Excel อ่านภาษาไทยได้) */

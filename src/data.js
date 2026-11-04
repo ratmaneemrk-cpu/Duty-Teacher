@@ -52,8 +52,9 @@ export async function saveReport({ id, fields, photos, existingPhotoIds = [] }) 
     batch.delete(doc(db, 'reports', reportId, 'photos', pid))
   })
   photos.forEach((p, order) => {
-    const ref = p.id ? doc(db, 'reports', reportId, 'photos', p.id) : doc(photosCol(reportId))
-    batch.set(ref, { data: p.data, order })
+    // รูปเดิมไม่ต้องส่งข้อมูลรูปซ้ำ อัปเดตแค่ลำดับ
+    if (p.id) batch.update(doc(db, 'reports', reportId, 'photos', p.id), { order })
+    else batch.set(doc(photosCol(reportId)), { data: p.data, order })
   })
   await batch.commit()
   return reportId
@@ -93,4 +94,21 @@ export async function listSchedulesBetween(start, end) {
     query(collection(db, 'schedules'), where('date', '>=', start), where('date', '<=', end)),
   )
   return Object.fromEntries(snap.docs.map((d) => [d.id, d.data()]))
+}
+
+/** รายงานก่อนวันที่ (YYYY-MM-DD) ที่ยังมีรูปภาพ */
+export async function listReportsWithPhotosBefore(date) {
+  const snap = await getDocs(query(reportsCol(), where('date', '<', date)))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((r) => r.photoCount > 0)
+}
+
+/** ลบรูปภาพของรายงาน (ตัวรายงานยังอยู่) */
+export async function deleteOldPhotos(reportIds) {
+  for (const id of reportIds) {
+    const photos = await getDocs(photosCol(id))
+    const batch = writeBatch(db)
+    photos.docs.forEach((d) => batch.delete(d.ref))
+    batch.update(doc(db, 'reports', id), { photoCount: 0, photosRemoved: true })
+    await batch.commit()
+  }
 }
