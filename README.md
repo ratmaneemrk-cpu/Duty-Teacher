@@ -10,7 +10,7 @@
 
 ## เทคโนโลยี
 
-React 18 + Vite, Firebase Authentication (Anonymous + Email/Password), Cloud Firestore และ Firebase Hosting
+React 18 + Vite, Firebase Authentication (Anonymous), Cloud Firestore และ Firebase Hosting
 
 รูปภาพจะถูกย่อขนาดในเบราว์เซอร์แล้วเก็บใน Firestore จึงใช้แผนฟรี (Spark) ได้ ไม่ต้องเปิด Cloud Storage
 
@@ -19,18 +19,18 @@ React 18 + Vite, Firebase Authentication (Anonymous + Email/Password), Cloud Fir
 1. ติดตั้ง [Node.js LTS](https://nodejs.org) และ [Git](https://git-scm.com)
 2. `npm install`
 3. ตั้งค่า Firebase (โปรเจค `duty-teacher`)
-   - Firebase Console → **Build → Authentication** → Sign-in method → เปิด **Anonymous** และ **Email/Password**
+   - Firebase Console → **Build → Authentication** → Sign-in method → เปิด **Anonymous**
    - **Build → Firestore Database** → Create database
    - **Project settings → General → Your apps** → เพิ่ม Web app แล้วคัดลอกค่า config
 4. คัดลอก `.env.example` เป็น `.env` แล้วใส่ค่า config จากข้อ 3
 5. `npm run dev` แล้วเปิด http://localhost:5173
 
-### ตั้งรหัสผู้ดูแลระบบ
+### ตั้งรหัสผ่านผู้ดูแลระบบ (ครั้งแรก)
 
-1. Firebase Console → **Authentication → Sign-in method** → เปิด **Email/Password**
-2. **Authentication → Users → Add user** ใส่อีเมล `admin@duty-teacher.web.app` และรหัสผู้ดูแลที่ต้องการ (อย่างน้อย 6 ตัวอักษร)
-3. หน้าเข้าใช้งาน ใส่ชื่อผู้ใช้งาน `admin` และรหัสผ่านที่ตั้งไว้ จะได้สิทธิ์ผู้ดูแลทันที (อีเมลข้างต้นใช้ภายในระบบเท่านั้น ผู้ใช้ไม่ต้องรู้)
-4. เปลี่ยนรหัสได้ที่เมนู "จัดการผู้ใช้" (ต้องเข้าด้วยรหัสผู้ดูแล)
+1. Firebase Console → **Firestore Database** → Start collection ชื่อ `adminSecrets`
+2. Document ID ใส่รหัสผ่านผู้ดูแลที่ต้องการ (อย่างน้อย 8 ตัวอักษร ห้ามมี `/`) ฟิลด์ใส่อะไรก็ได้ เช่น `note` = `admin`
+3. หน้าเข้าใช้งาน ใส่ชื่อผู้ใช้งาน `admin` และรหัสผ่านนั้น จะได้สิทธิ์ผู้ดูแลทันที
+4. ครั้งต่อไปเปลี่ยนรหัสได้ที่เมนู "จัดการผู้ใช้"
 
 ## Deploy
 
@@ -54,10 +54,11 @@ firebase deploy            # deploy hosting + firestore rules + indexes
 
 | Collection | คำอธิบาย |
 |---|---|
-| `users/{uid}` | `displayName`, `email`, `role` (`pending` / `teacher` / `admin`) |
+| `users/{uid}` | `displayName`, `username`, `role` (`pending` / `teacher` / `admin`) |
 | `reports/{id}` | รายงานเวร: `date`, `shift`, `uid`, `teacherName`, `checklist`, `studentsLate`, `studentsAbsent`, `incidents`, `actions`, `suggestions`, `status`, `adminComment` |
 | `reports/{id}/photos/{id}` | รูปภาพประกอบ (JPEG data URL) |
 | `personnel/{id}` | บุคลากร: `name`, `position`, `phone`, `dutyDay` (0 = ไม่มีเวร, 1–5 = จันทร์–ศุกร์), `head` — ทุกคนดูได้ แก้ไขได้เฉพาะผู้ดูแล |
+| `adminSecrets/{รหัสผ่าน}` | รหัสผ่านผู้ดูแลระบบ (id ของเอกสาร) อ่าน/เขียนได้เฉพาะผู้ดูแล |
 | `schedules/{YYYY-MM-DD}` | ตารางเวรรายวัน: `teachers[]`, `note` |
 
 สิทธิ์การเข้าถึงกำหนดไว้ใน `firestore.rules`

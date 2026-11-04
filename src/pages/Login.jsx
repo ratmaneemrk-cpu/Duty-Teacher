@@ -21,7 +21,7 @@ function loginError(err) {
 }
 
 export default function Login() {
-  const { loginAsPerson, loginWithAdminCode } = useAuth()
+  const { loginAsPerson, loginWithAdminCode, loginError: authError } = useAuth()
   const { directory } = usePersonnel()
   const [username, setUsername] = useState('')
   const [code, setCode] = useState('')
@@ -91,7 +91,7 @@ export default function Login() {
           </button>
           <p className="muted small">ใช้ชื่อผู้ใช้งานที่โรงเรียนกำหนด รหัสผ่านเหมือนชื่อผู้ใช้งาน เครื่องนี้จะจำไว้ ครั้งต่อไปไม่ต้องพิมพ์ใหม่</p>
         </form>
-        {error && <p className="error">{error}</p>}
+        {(error || authError) && <p className="error">{error || authError}</p>}
       </div>
     </div>
   )

@@ -18,7 +18,8 @@ function ChangeAdminCode() {
     e.preventDefault()
     setError('')
     setMessage('')
-    if (next.length < 6) return setError('รหัสใหม่ต้องมีอย่างน้อย 6 ตัวอักษร')
+    if (next.length < 8) return setError('รหัสใหม่ต้องมีอย่างน้อย 8 ตัวอักษร')
+    if (next.includes('/') || next.startsWith('.')) return setError('รหัสใหม่ห้ามมีเครื่องหมาย / หรือขึ้นต้นด้วยจุด')
     if (next !== confirm) return setError('รหัสใหม่ทั้งสองช่องไม่ตรงกัน')
     setBusy(true)
     try {
@@ -28,7 +29,7 @@ function ChangeAdminCode() {
       setConfirm('')
       setMessage('เปลี่ยนรหัสผู้ดูแลระบบเรียบร้อยแล้ว')
     } catch (err) {
-      setError(['auth/invalid-credential', 'auth/wrong-password'].includes(err.code) ? 'รหัสปัจจุบันไม่ถูกต้อง' : errorMessage(err))
+      setError(errorMessage(err))
     } finally {
       setBusy(false)
     }
@@ -59,7 +60,7 @@ function ChangeAdminCode() {
 }
 
 export default function Users() {
-  const { user, isAdminCode } = useAuth()
+  const { user } = useAuth()
   const [users, setUsers] = useState(null)
   const [error, setError] = useState('')
 
@@ -130,7 +131,7 @@ export default function Users() {
                 {users.map((u) => (
                   <tr key={u.id} className={u.role === 'pending' ? 'row-pending' : ''}>
                     <td>{u.displayName}</td>
-                    <td>{u.username || u.email || <span className="muted">-</span>}</td>
+                    <td>{u.username || <span className="muted">-</span>}</td>
                     <td>
                       <select value={u.role} onChange={(e) => changeRole(u, e.target.value)}>
                         {Object.entries(ROLES).map(([k, v]) => (
@@ -151,7 +152,7 @@ export default function Users() {
           </div>
         )}
       </div>
-      {isAdminCode && <ChangeAdminCode />}
+      <ChangeAdminCode />
     </div>
   )
 }

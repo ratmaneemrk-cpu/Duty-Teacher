@@ -96,7 +96,7 @@ export default function ReportForm() {
         suggestions: form.suggestions.trim(),
         uid: user.uid,
         teacherName: profile.displayName,
-        teacherEmail: profile.email ?? '',
+        teacherUsername: profile.username ?? '',
       }
       const reportId = await saveReport({ id, fields, photos, existingPhotoIds })
       navigate(`/reports/${reportId}`)

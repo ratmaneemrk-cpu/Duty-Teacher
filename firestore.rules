@@ -8,10 +8,11 @@ service cloud.firestore {
     function isNameLogin() {
       return request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
-    // บัญชีผู้ดูแลระบบที่เข้าด้วยรหัส (ADMIN_EMAIL ใน src/constants.js)
-    function isAdminCodeLogin() {
-      return request.auth.token.firebase.sign_in_provider == 'password'
-        && request.auth.token.email == 'admin@duty-teacher.web.app';
+    // รหัสผ่านผู้ดูแลระบบคือ id ของเอกสารใน adminSecrets (ไม่มีใครอ่านได้ก่อนเป็นผู้ดูแล)
+    function hasAdminCode() {
+      return request.resource.data.adminCode is string
+        && request.resource.data.adminCode.size() > 0
+        && exists(/databases/$(database)/documents/adminSecrets/$(request.resource.data.adminCode));
     }
     function myRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
@@ -35,7 +36,7 @@ service cloud.firestore {
         && request.resource.data.displayName.size() <= 100
         && (request.resource.data.role == 'pending'
             || (isNameLogin() && request.resource.data.role == 'teacher')
-            || (isAdminCodeLogin() && request.resource.data.role == 'admin'));
+            || (isNameLogin() && request.resource.data.role == 'admin' && hasAdminCode()));
       allow update: if isAdmin()
         || (request.auth.uid == uid
             && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
@@ -79,6 +80,11 @@ service cloud.firestore {
         && request.resource.data.dutyDay <= 5
         && request.resource.data.head is bool;
       allow delete: if isAdmin();
+    }
+
+    // รหัสผ่านผู้ดูแลระบบ: ผู้ดูแลเปลี่ยนได้ (ตั้งครั้งแรกใน Firebase Console)
+    match /adminSecrets/{code} {
+      allow read, write: if isAdmin();
     }
 
     // ตารางเวร: ทุกคนในระบบดูได้ ผู้ดูแลจัดการ

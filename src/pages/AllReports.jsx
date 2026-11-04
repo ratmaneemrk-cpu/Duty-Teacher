@@ -42,12 +42,12 @@ export default function AllReports() {
 
   const exportCsv = () => {
     const header = [
-      'วันที่', 'ช่วงเวลา', 'ครูเวร', 'อีเมล',
+      'วันที่', 'ช่วงเวลา', 'ครูเวร', 'ชื่อผู้ใช้งาน',
       ...CHECKLIST.map((c) => c.label),
       'มาสาย', 'ขาดเรียน', 'เหตุการณ์', 'การแก้ไข', 'ข้อเสนอแนะ', 'สถานะ', 'ความเห็นผู้บริหาร',
     ]
     const rows = [...shown].reverse().map((r) => [
-      r.date, shiftLabel(r.shift), r.teacherName, r.teacherEmail,
+      r.date, shiftLabel(r.shift), r.teacherName, r.teacherUsername ?? '',
       ...CHECKLIST.map((c) => (r.checklist?.[c.id] ? '✓' : '')),
       r.studentsLate ?? 0, r.studentsAbsent ?? 0, r.incidents, r.actions, r.suggestions,
       STATUS[r.status] ?? r.status, r.adminComment ?? '',
