@@ -62,7 +62,6 @@ export default function TodayDuty({ date, report, onSaved }) {
         fields: report
           ? fields
           : {
-              studentsAbsent: 0,
               actions: '',
               suggestions: '',
               ...fields,

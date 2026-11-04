@@ -108,9 +108,6 @@ export default function ReportDetail() {
           ))}
         </ul>
 
-        <dl className="meta">
-          <div><dt>นักเรียนขาดเรียน</dt><dd>{report.studentsAbsent ?? 0} คน</dd></div>
-        </dl>
 
         <h2>เหตุการณ์ที่พบ</h2>
         <p className="pre">{report.incidents || '-'}</p>

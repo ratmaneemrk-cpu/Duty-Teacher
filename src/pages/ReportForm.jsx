@@ -12,7 +12,6 @@ const emptyForm = () => ({
   shift: SHIFTS[0].id,
   checklist: Object.fromEntries([...CHECKLIST, OTHER_DUTY].map((c) => [c.id, false])),
   otherDuty: '',
-  studentsAbsent: 0,
   incidents: '',
   actions: '',
   suggestions: '',
@@ -64,8 +63,6 @@ export default function ReportForm() {
   }, [id, user.uid])
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
-  const setNumber = (key) => (e) =>
-    setForm((f) => ({ ...f, [key]: Math.max(0, parseInt(e.target.value, 10) || 0) }))
   const toggle = (key) => () =>
     setForm((f) => ({ ...f, checklist: { ...f.checklist, [key]: !f.checklist[key] } }))
 
@@ -79,7 +76,6 @@ export default function ReportForm() {
         shift: form.shift,
         checklist: form.checklist,
         otherDuty: form.otherDuty.trim(),
-        studentsAbsent: form.studentsAbsent,
         incidents: form.incidents.trim(),
         actions: form.actions.trim(),
         suggestions: form.suggestions.trim(),
@@ -133,10 +129,6 @@ export default function ReportForm() {
         />
       </fieldset>
 
-      <label className="field">
-        <span>จำนวนนักเรียนขาดเรียน (คน)</span>
-        <input type="number" min="0" inputMode="numeric" value={form.studentsAbsent} onChange={setNumber('studentsAbsent')} />
-      </label>
 
       <label className="field">
         <span>เหตุการณ์ที่พบ / เหตุการณ์ผิดปกติ</span>
