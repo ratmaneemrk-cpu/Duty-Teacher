@@ -8,16 +8,17 @@ service cloud.firestore {
     function isNameLogin() {
       return request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
-    // รหัสผ่านผู้ดูแลระบบคือ id ของเอกสารใน adminSecrets (ไม่มีใครอ่านได้ก่อนเป็นผู้ดูแล)
-    // แต่ละรหัสผูกกับชื่อผู้ใช้งาน (ฟิลด์ username) ใช้กับชื่อผู้ใช้งานอื่นไม่ได้
-    function adminSecret(code) {
-      return /databases/$(database)/documents/adminSecrets/$(code);
+    // รหัสผ่าน: เอกสาร passwords/{ชื่อผู้ใช้งาน}__{รหัสผ่าน} (อ่านได้เฉพาะผู้ดูแล)
+    // ตอนเข้าระบบ ผู้ใช้ส่ง loginCode มากับโปรไฟล์ ต้องมีเอกสารรหัสผ่านนี้ของชื่อผู้ใช้งานนี้
+    function loginSecret() {
+      return /databases/$(database)/documents/passwords/$(request.resource.data.username + '__' + request.resource.data.loginCode);
     }
-    function hasAdminCode() {
-      return request.resource.data.adminCode is string
-        && request.resource.data.adminCode.size() > 0
-        && exists(adminSecret(request.resource.data.adminCode))
-        && get(adminSecret(request.resource.data.adminCode)).data.username == request.resource.data.username;
+    function hasLoginCode() {
+      return request.resource.data.username is string
+        && request.resource.data.loginCode is string
+        && request.resource.data.loginCode.size() > 0
+        && exists(loginSecret())
+        && get(loginSecret()).data.username == request.resource.data.username;
     }
     function myRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
@@ -39,9 +40,10 @@ service cloud.firestore {
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0
         && request.resource.data.displayName.size() <= 100
-        && (request.resource.data.role == 'pending'
-            || (isNameLogin() && request.resource.data.role == 'teacher')
-            || (isNameLogin() && request.resource.data.role == 'admin' && hasAdminCode()));
+        && isNameLogin()
+        && hasLoginCode()
+        && (request.resource.data.role == 'teacher'
+            || (request.resource.data.role == 'admin' && get(loginSecret()).data.admin == true));
       allow update: if isAdmin()
         || (request.auth.uid == uid
             && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
@@ -94,8 +96,8 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // รหัสผ่านผู้ดูแลระบบ: ผู้ดูแลเปลี่ยนได้ (ตั้งครั้งแรกใน Firebase Console)
-    match /adminSecrets/{code} {
+    // รหัสผ่านเข้าระบบ: ผู้ดูแลตั้ง/เปลี่ยนได้ที่หน้าบุคลากร
+    match /passwords/{id} {
       allow read, write: if isAdmin();
     }
 

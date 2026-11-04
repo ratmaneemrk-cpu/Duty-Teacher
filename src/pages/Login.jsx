@@ -21,7 +21,7 @@ function loginError(err) {
 }
 
 export default function Login() {
-  const { loginAsPerson, loginWithAdminCode, loginError: authError } = useAuth()
+  const { login, loginError: authError } = useAuth()
   const { directory } = usePersonnel()
   const [username, setUsername] = useState('')
   const [code, setCode] = useState('')
@@ -29,8 +29,8 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
 
   const person = findByUsername(directory, username)
-  // ผู้ดูแล: ชื่อผู้ใช้งาน admin หรือบุคลากรที่มีสิทธิ์ผู้ดูแล ตรวจรหัสผ่านด้วย security rules
-  const isAdminUser = username.trim().toLowerCase() === 'admin' || Boolean(person?.admin)
+  // บัญชี admin ไม่อยู่ในรายชื่อบุคลากร
+  const isAdminUser = username.trim().toLowerCase() === 'admin'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -39,15 +39,14 @@ export default function Login() {
       setError('ไม่พบชื่อผู้ใช้งานนี้ กรุณาตรวจสอบหรือแจ้งผู้ดูแลระบบ')
       return
     }
-    // ครู: รหัสผ่านคือชื่อผู้ใช้งานของตนเอง
-    if (!isAdminUser && code.trim().toLowerCase() !== person.username.toLowerCase()) {
-      setError('รหัสผ่านไม่ถูกต้อง')
-      return
-    }
     setBusy(true)
     try {
-      if (isAdminUser) await loginWithAdminCode(code, person?.name ?? 'ผู้ดูแลระบบ', person?.username ?? 'admin')
-      else await loginAsPerson(person)
+      // security rules ตรวจรหัสผ่าน
+      await login(
+        isAdminUser
+          ? { name: 'ผู้ดูแลระบบ', username: 'admin', admin: true, code: code.trim() }
+          : { name: person.name, username: person.username, admin: Boolean(person.admin), code: code.trim() },
+      )
     } catch (err) {
       setError(loginError(err))
     } finally {
@@ -90,7 +89,7 @@ export default function Login() {
           <button type="submit" className="btn btn-primary btn-lg" disabled={busy || !username.trim() || !code}>
             {busy ? 'กำลังเข้าใช้งาน...' : 'เข้าใช้งาน'}
           </button>
-          <p className="muted small">ใช้ชื่อผู้ใช้งานที่โรงเรียนกำหนด รหัสผ่านเหมือนชื่อผู้ใช้งาน เครื่องนี้จะจำไว้ ครั้งต่อไปไม่ต้องพิมพ์ใหม่</p>
+          <p className="muted small">ใช้ชื่อผู้ใช้งานที่โรงเรียนกำหนด รหัสผ่านเริ่มต้นเหมือนชื่อผู้ใช้งาน เครื่องนี้จะจำไว้ ครั้งต่อไปไม่ต้องพิมพ์ใหม่</p>
         </form>
         {(error || authError) && <p className="error">{error || authError}</p>}
       </div>

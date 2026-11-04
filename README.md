@@ -25,13 +25,11 @@ React 18 + Vite, Firebase Authentication (Anonymous), Cloud Firestore และ 
 4. คัดลอก `.env.example` เป็น `.env` แล้วใส่ค่า config จากข้อ 3
 5. `npm run dev` แล้วเปิด http://localhost:5173
 
-### ตั้งรหัสผ่านผู้ดูแลระบบ (ครั้งแรก)
+### รหัสผ่าน
 
-1. Firebase Console → **Firestore Database** → Start collection ชื่อ `adminSecrets`
-2. Document ID ใส่รหัสผ่านผู้ดูแลที่ต้องการ (ห้ามมี `/`) และเพิ่มฟิลด์ `username` = `admin` (รหัสใช้ได้กับชื่อผู้ใช้งานนี้เท่านั้น)
-3. หน้าเข้าใช้งาน ใส่ชื่อผู้ใช้งาน `admin` และรหัสผ่านนั้น จะได้สิทธิ์ผู้ดูแลทันที
-4. ครั้งต่อไปเปลี่ยนรหัสได้ที่เมนู "จัดการผู้ใช้"
-5. บุคลากรที่มี `admin: true` (ตอนนี้คือ ผอ. `t999`) เข้าด้วยรหัสผ่านใน `adminSecrets` ที่มี `username` เป็นชื่อผู้ใช้งานของตน และได้สิทธิ์ผู้ดูแล
+- รหัสผ่านเก็บใน collection `passwords` (id ของเอกสาร = `ชื่อผู้ใช้งาน__รหัสผ่าน`, ฟิลด์ `username`, `admin`) อ่าน/เขียนได้เฉพาะผู้ดูแล
+- ตั้งครั้งแรก: Firebase Console → Firestore → collection `passwords` → Document ID `admin__รหัสผ่าน` ฟิลด์ `username` = `admin`, `admin` = `true`
+- ผู้ดูแลเปลี่ยนรหัสผ่านของครูทุกคนและบัญชี `admin` ได้ที่หน้า "บุคลากร" (ครูที่เพิ่มใหม่ รหัสผ่านเริ่มต้นเหมือนชื่อผู้ใช้งาน)
 
 ## Deploy
 
@@ -59,7 +57,7 @@ firebase deploy            # deploy hosting + firestore rules + indexes
 | `reports/{id}` | รายงานเวร: `date`, `shift`, `uid`, `teacherName`, `checklist`, `studentsLate`, `studentsAbsent`, `incidents`, `actions`, `suggestions`, `status`, `adminComment` |
 | `reports/{id}/photos/{id}` | รูปภาพประกอบ (JPEG data URL) |
 | `personnel/{id}` | บุคลากร: `name`, `position`, `phone`, `dutyDay` (0 = ไม่มีเวร, 1–5 = จันทร์–ศุกร์), `head` — ทุกคนดูได้ แก้ไขได้เฉพาะผู้ดูแล |
-| `adminSecrets/{รหัสผ่าน}` | รหัสผ่านผู้ดูแลระบบ (id ของเอกสาร) อ่าน/เขียนได้เฉพาะผู้ดูแล |
+| `passwords/{ชื่อผู้ใช้งาน__รหัสผ่าน}` | รหัสผ่านเข้าระบบ: `username`, `admin` — อ่าน/เขียนได้เฉพาะผู้ดูแล |
 | `schedules/{YYYY-MM-DD}` | ตารางเวรรายวัน: `teachers[]`, `note` |
 
 สิทธิ์การเข้าถึงกำหนดไว้ใน `firestore.rules`

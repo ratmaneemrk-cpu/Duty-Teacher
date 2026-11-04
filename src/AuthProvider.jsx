@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { onAuthStateChanged, signInAnonymously, signOut } from 'firebase/auth'
-import { deleteDoc, deleteField, doc, getDoc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import { deleteField, doc, getDoc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import { AuthContext } from './auth-context'
 import { errorMessage } from './utils'
 
-const NO_USER = { name: '', username: '', adminCode: '' }
+const NO_LOGIN = null
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  // ข้อผิดพลาดตอนเข้าระบบ (เช่น รหัสผ่านผู้ดูแลผิด) แสดงในหน้าเข้าใช้งาน
+  // ข้อผิดพลาดตอนเข้าระบบ (เช่น รหัสผ่านผิด) แสดงในหน้าเข้าใช้งาน
   const [loginError, setLoginError] = useState('')
-  // ข้อมูลของคนที่กำลังเข้าระบบ ใช้สร้างโปรไฟล์หลัง signInAnonymously สำเร็จ
-  const newUser = useRef(NO_USER)
+  // ข้อมูลของคนที่กำลังเข้าระบบ { name, username, role, code } ใช้สร้างโปรไฟล์หลัง signInAnonymously
+  const pending = useRef(NO_LOGIN)
 
   useEffect(() => {
     let unsubProfile = () => {}
@@ -34,27 +34,28 @@ export default function AuthProvider({ children }) {
         const ref = doc(db, 'users', u.uid)
         const snap = await getDoc(ref)
         if (!snap.exists()) {
-          const { name, username, adminCode } = newUser.current
-          newUser.current = NO_USER
-          if (!u.isAnonymous || !name) {
+          const login = pending.current
+          pending.current = NO_LOGIN
+          if (!u.isAnonymous || !login) {
             await signOut(auth)
             return
           }
-          if (adminCode) {
-            // ผู้ดูแล: security rules ตรวจว่ารหัสผ่านตรงกับเอกสารใน adminSecrets
-            try {
-              await setDoc(ref, { displayName: name, username, role: 'admin', adminCode, createdAt: serverTimestamp() })
-            } catch {
-              await u.delete().catch(() => signOut(auth))
-              setLoginError('รหัสผ่านไม่ถูกต้อง')
-              return
-            }
-            // ไม่เก็บรหัสผ่านไว้ในโปรไฟล์
-            await updateDoc(ref, { adminCode: deleteField() })
-          } else {
-            // ครูได้สิทธิ์ครูทันทีโดยไม่ต้องรออนุมัติ
-            await setDoc(ref, { displayName: name, username, role: 'teacher', createdAt: serverTimestamp() })
+          // security rules ตรวจว่ามีรหัสผ่านนี้ในเอกสาร passwords ของชื่อผู้ใช้งานนี้
+          try {
+            await setDoc(ref, {
+              displayName: login.name,
+              username: login.username,
+              role: login.role,
+              loginCode: login.code,
+              createdAt: serverTimestamp(),
+            })
+          } catch {
+            await u.delete().catch(() => signOut(auth))
+            setLoginError('รหัสผ่านไม่ถูกต้อง')
+            return
           }
+          // ไม่เก็บรหัสผ่านไว้ในโปรไฟล์
+          await updateDoc(ref, { loginCode: deleteField() })
         }
         unsubProfile = onSnapshot(
           ref,
@@ -87,27 +88,11 @@ export default function AuthProvider({ children }) {
       loginError,
       isAdmin: profile?.role === 'admin',
       isStaff: profile?.role === 'teacher' || profile?.role === 'admin',
-      // ครูเข้าด้วยชื่อผู้ใช้งาน (เช่น t016)
-      loginAsPerson: (person) => {
+      // เข้าระบบด้วยชื่อผู้ใช้งานและรหัสผ่าน (ไม่ใช้อีเมล)
+      login: ({ name, username, admin, code }) => {
         setLoginError('')
-        newUser.current = { name: person.name, username: person.username, adminCode: '' }
+        pending.current = { name, username, role: admin ? 'admin' : 'teacher', code }
         return signInAnonymously(auth)
-      },
-      // ผู้ดูแลเข้าด้วยชื่อผู้ใช้งาน admin และรหัสผ่าน ไม่ต้องใช้อีเมล
-      loginWithAdminCode: (code, name, username) => {
-        setLoginError('')
-        newUser.current = { name, username, adminCode: code }
-        return signInAnonymously(auth)
-      },
-      // รหัสผ่านผู้ดูแลคือ id ของเอกสารใน adminSecrets ผูกกับชื่อผู้ใช้งาน (อ่านได้เฉพาะผู้ดูแล)
-      changeAdminCode: async (currentCode, newCode) => {
-        const username = profile?.username
-        const current = await getDoc(doc(db, 'adminSecrets', currentCode))
-        if (!current.exists() || current.data().username !== username) throw new Error('รหัสปัจจุบันไม่ถูกต้อง')
-        const next = await getDoc(doc(db, 'adminSecrets', newCode))
-        if (next.exists()) throw new Error('ใช้รหัสนี้ไม่ได้ กรุณาตั้งรหัสอื่น')
-        await setDoc(doc(db, 'adminSecrets', newCode), { username, createdAt: serverTimestamp() })
-        await deleteDoc(current.ref)
       },
       logout: () => signOut(auth),
     }),

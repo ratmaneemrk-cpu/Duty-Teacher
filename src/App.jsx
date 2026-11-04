@@ -9,7 +9,6 @@ import ReportDetail from './pages/ReportDetail'
 import MyReports from './pages/MyReports'
 import AllReports from './pages/AllReports'
 import Schedule from './pages/Schedule'
-import Users from './pages/Users'
 import Personnel from './pages/Personnel'
 import Summary from './pages/Summary'
 
@@ -37,7 +36,6 @@ export default function App() {
         <Route path="schedule" element={<Schedule />} />
         <Route path="personnel" element={<Personnel />} />
         <Route path="admin/reports" element={<AdminOnly><AllReports /></AdminOnly>} />
-        <Route path="admin/users" element={<AdminOnly><Users /></AdminOnly>} />
         <Route path="admin/summary" element={<AdminOnly><Summary /></AdminOnly>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -113,21 +113,63 @@ export async function deleteOldPhotos(reportIds) {
   }
 }
 
-/**
- * ให้/ยกเลิกสิทธิ์ผู้ดูแลของบุคลากร
- * ให้สิทธิ์: สร้างรหัสผ่านผู้ดูแลเริ่มต้น = ชื่อผู้ใช้งาน (เอกสาร adminSecrets)
- * ยกเลิก: ลบรหัสผ่านผู้ดูแลทั้งหมดของชื่อผู้ใช้งานนั้น
- * บัญชีที่เข้าใช้งานอยู่แล้ว (userIds) เปลี่ยนสิทธิ์ตามทันที
+/*
+ * รหัสผ่านเข้าระบบ: เอกสาร passwords/{ชื่อผู้ใช้งาน}__{รหัสผ่าน} = { username, admin }
+ * อ่าน/เขียนได้เฉพาะผู้ดูแล security rules ตรวจว่ามีเอกสารนี้ตอนสร้างบัญชีเข้าใช้งาน
  */
-export async function setPersonAdmin(person, admin, userIds) {
+const passwordsCol = () => collection(db, 'passwords')
+
+export function passwordDocId(username, password) {
+  return `${username}__${password}`
+}
+
+/** ตรวจรหัสผ่านใหม่ คืนข้อความผิดพลาด หรือ '' ถ้าใช้ได้ */
+export function passwordProblem(password) {
+  if (password.length < 4) return 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร'
+  if (password.length > 50) return 'รหัสผ่านยาวเกิน 50 ตัวอักษร'
+  if (/[/\s]/.test(password)) return 'รหัสผ่านห้ามมีช่องว่างหรือเครื่องหมาย /'
+  return ''
+}
+
+/** ตั้งรหัสผ่านใหม่ของชื่อผู้ใช้งาน (ลบรหัสเดิมทั้งหมด) */
+export async function setPassword(username, password, admin) {
+  const old = await getDocs(query(passwordsCol(), where('username', '==', username)))
   const batch = writeBatch(db)
-  if (admin) {
-    batch.set(doc(db, 'adminSecrets', person.username), { username: person.username, createdAt: serverTimestamp() })
-  } else {
-    const secrets = await getDocs(query(collection(db, 'adminSecrets'), where('username', '==', person.username)))
-    secrets.docs.forEach((d) => batch.delete(d.ref))
+  old.docs.forEach((d) => batch.delete(d.ref))
+  batch.set(doc(db, 'passwords', passwordDocId(username, password)), {
+    username,
+    admin: Boolean(admin),
+    updatedAt: serverTimestamp(),
+  })
+  await batch.commit()
+}
+
+/** ลบรหัสผ่านทั้งหมดของชื่อผู้ใช้งาน */
+export async function deletePasswords(username) {
+  const old = await getDocs(query(passwordsCol(), where('username', '==', username)))
+  const batch = writeBatch(db)
+  old.docs.forEach((d) => batch.delete(d.ref))
+  await batch.commit()
+}
+
+/**
+ * ให้/ยกเลิกสิทธิ์ผู้ดูแลของบุคลากร: แก้ทั้งรายชื่อบุคลากร รหัสผ่าน และบัญชีที่เข้าใช้งานอยู่
+ */
+export async function setPersonAdmin(person, admin) {
+  const [secrets, accounts] = await Promise.all([
+    getDocs(query(passwordsCol(), where('username', '==', person.username))),
+    getDocs(query(collection(db, 'users'), where('username', '==', person.username))),
+  ])
+  const batch = writeBatch(db)
+  secrets.docs.forEach((d) => batch.update(d.ref, { admin }))
+  if (secrets.empty) {
+    batch.set(doc(db, 'passwords', passwordDocId(person.username, person.username)), {
+      username: person.username,
+      admin,
+      updatedAt: serverTimestamp(),
+    })
   }
+  accounts.docs.forEach((d) => batch.update(d.ref, { role: admin ? 'admin' : 'teacher' }))
   batch.update(doc(db, 'personnel', person.id), { admin, updatedAt: serverTimestamp() })
-  userIds.forEach((id) => batch.update(doc(db, 'users', id), { role: admin ? 'admin' : 'teacher' }))
   await batch.commit()
 }

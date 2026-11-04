@@ -37,7 +37,6 @@ export default function Layout() {
             <>
               <NavLink to="/admin/reports" onClick={close}>รายงานการทำเวร</NavLink>
               <NavLink to="/admin/summary" onClick={close}>สรุปการปฏิบัติหน้าที่</NavLink>
-              <NavLink to="/admin/users" onClick={close}>จัดการผู้ใช้</NavLink>
             </>
           )}
           <div className="user-box">

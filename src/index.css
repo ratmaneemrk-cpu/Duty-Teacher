@@ -809,3 +809,26 @@ th {
     flex: 1;
   }
 }
+
+/* ---------- personnel ---------- */
+.duty-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 130px;
+}
+
+.row-actions.wrap {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.tag-admin {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: var(--accent);
+  color: var(--accent-text);
+}
