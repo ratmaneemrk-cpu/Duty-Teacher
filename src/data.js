@@ -112,3 +112,22 @@ export async function deleteOldPhotos(reportIds) {
     await batch.commit()
   }
 }
+
+/**
+ * ให้/ยกเลิกสิทธิ์ผู้ดูแลของบุคลากร
+ * ให้สิทธิ์: สร้างรหัสผ่านผู้ดูแลเริ่มต้น = ชื่อผู้ใช้งาน (เอกสาร adminSecrets)
+ * ยกเลิก: ลบรหัสผ่านผู้ดูแลทั้งหมดของชื่อผู้ใช้งานนั้น
+ * บัญชีที่เข้าใช้งานอยู่แล้ว (userIds) เปลี่ยนสิทธิ์ตามทันที
+ */
+export async function setPersonAdmin(person, admin, userIds) {
+  const batch = writeBatch(db)
+  if (admin) {
+    batch.set(doc(db, 'adminSecrets', person.username), { username: person.username, createdAt: serverTimestamp() })
+  } else {
+    const secrets = await getDocs(query(collection(db, 'adminSecrets'), where('username', '==', person.username)))
+    secrets.docs.forEach((d) => batch.delete(d.ref))
+  }
+  batch.update(doc(db, 'personnel', person.id), { admin, updatedAt: serverTimestamp() })
+  userIds.forEach((id) => batch.update(doc(db, 'users', id), { role: admin ? 'admin' : 'teacher' }))
+  await batch.commit()
+}
