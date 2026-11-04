@@ -8,6 +8,11 @@ service cloud.firestore {
     function isNameLogin() {
       return request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
+    // บัญชีผู้ดูแลระบบที่เข้าด้วยรหัส (ADMIN_EMAIL ใน src/constants.js)
+    function isAdminCodeLogin() {
+      return request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email == 'admin@duty-teacher.web.app';
+    }
     function myRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
@@ -29,7 +34,8 @@ service cloud.firestore {
         && request.resource.data.displayName.size() > 0
         && request.resource.data.displayName.size() <= 100
         && (request.resource.data.role == 'pending'
-            || (isNameLogin() && request.resource.data.role == 'teacher'));
+            || (isNameLogin() && request.resource.data.role == 'teacher')
+            || (isAdminCodeLogin() && request.resource.data.role == 'admin'));
       allow update: if isAdmin()
         || (request.auth.uid == uid
             && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
@@ -57,6 +63,22 @@ service cloud.firestore {
         allow write: if isAdmin()
           || (isStaff() && reportDoc(id).uid == request.auth.uid && reportDoc(id).status == 'submitted');
       }
+    }
+
+    // บุคลากร: ทุกคนดูได้ (ใช้หาชื่อจากชื่อผู้ใช้งานตอนเข้าระบบ) แก้ไขได้เฉพาะผู้ดูแลระบบ
+    match /personnel/{id} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.username is string
+        && request.resource.data.username.matches('[a-z0-9_.-]{1,20}')
+        && request.resource.data.dutyDay is int
+        && request.resource.data.dutyDay >= 0
+        && request.resource.data.dutyDay <= 5
+        && request.resource.data.head is bool;
+      allow delete: if isAdmin();
     }
 
     // ตารางเวร: ทุกคนในระบบดูได้ ผู้ดูแลจัดการ

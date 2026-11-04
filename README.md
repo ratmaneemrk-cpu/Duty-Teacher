@@ -4,12 +4,13 @@
 
 ## ความสามารถ
 
-- **ครู:** ล็อกอินด้วย Google, บันทึกรายงานเวร (ตรวจรายการ, จำนวนนักเรียนมาสาย/ขาด, เหตุการณ์, การแก้ไข, ข้อเสนอแนะ และแนบรูปได้ไม่เกิน 4 รูป), ดูหรือแก้ไขรายงานของตนเอง, ดูตารางเวร, พิมพ์หรือบันทึกรายงานเป็น PDF
+- **ครู:** เข้าใช้งานด้วยชื่อผู้ใช้งาน (เช่น t016) รหัสผ่านเหมือนชื่อผู้ใช้งาน, บันทึกรายงานเวร (ตรวจรายการ, จำนวนนักเรียนมาสาย/ขาด, เหตุการณ์, การแก้ไข, ข้อเสนอแนะ และแนบรูปได้ไม่เกิน 4 รูป), ดูหรือแก้ไขรายงานของตนเอง, ดูตารางเวร, พิมพ์หรือบันทึกรายงานเป็น PDF
+- **บุคลากร:** ผู้ดูแลเพิ่ม/แก้ไข/ลบรายชื่อ ชื่อผู้ใช้งาน และวันเวร ได้ที่เมนู "บุคลากร" (ครูดูได้อย่างเดียว)
 - **ผู้ดูแลระบบ/ผู้บริหาร:** ดูรายงานทั้งหมดแยกตามเดือนพร้อมสรุปยอด, เขียนความเห็นและรับทราบรายงาน, ส่งออก CSV (เปิดใน Excel ได้), จัดตารางเวร, อนุมัติผู้ใช้และกำหนดสิทธิ์
 
 ## เทคโนโลยี
 
-React 18 + Vite, Firebase Authentication (Google), Cloud Firestore และ Firebase Hosting
+React 18 + Vite, Firebase Authentication (Anonymous + Email/Password), Cloud Firestore และ Firebase Hosting
 
 รูปภาพจะถูกย่อขนาดในเบราว์เซอร์แล้วเก็บใน Firestore จึงใช้แผนฟรี (Spark) ได้ ไม่ต้องเปิด Cloud Storage
 
@@ -18,18 +19,18 @@ React 18 + Vite, Firebase Authentication (Google), Cloud Firestore และ Fir
 1. ติดตั้ง [Node.js LTS](https://nodejs.org) และ [Git](https://git-scm.com)
 2. `npm install`
 3. ตั้งค่า Firebase (โปรเจค `duty-teacher`)
-   - Firebase Console → **Build → Authentication** → Sign-in method → เปิด **Google**
+   - Firebase Console → **Build → Authentication** → Sign-in method → เปิด **Anonymous** และ **Email/Password**
    - **Build → Firestore Database** → Create database
    - **Project settings → General → Your apps** → เพิ่ม Web app แล้วคัดลอกค่า config
 4. คัดลอก `.env.example` เป็น `.env` แล้วใส่ค่า config จากข้อ 3
 5. `npm run dev` แล้วเปิด http://localhost:5173
 
-### ตั้งผู้ดูแลระบบคนแรก
+### ตั้งรหัสผู้ดูแลระบบ
 
-1. เข้าสู่ระบบด้วยบัญชี Google ของผู้ดูแล (ระบบจะแสดงว่า "รออนุมัติ")
-2. ไปที่ Firebase Console → Firestore → collection `users` → เลือกเอกสารของบัญชีนั้น
-3. แก้ฟิลด์ `role` จาก `pending` เป็น `admin`
-4. รีเฟรชหน้าเว็บ หลังจากนี้ผู้ดูแลอนุมัติครูคนอื่นได้จากเมนู "จัดการผู้ใช้"
+1. Firebase Console → **Authentication → Sign-in method** → เปิด **Email/Password**
+2. **Authentication → Users → Add user** ใส่อีเมล `admin@duty-teacher.web.app` และรหัสผู้ดูแลที่ต้องการ (อย่างน้อย 6 ตัวอักษร)
+3. หน้าเข้าใช้งาน ใส่ชื่อผู้ใช้งาน `admin` และรหัสผ่านที่ตั้งไว้ จะได้สิทธิ์ผู้ดูแลทันที (อีเมลข้างต้นใช้ภายในระบบเท่านั้น ผู้ใช้ไม่ต้องรู้)
+4. เปลี่ยนรหัสได้ที่เมนู "จัดการผู้ใช้" (ต้องเข้าด้วยรหัสผู้ดูแล)
 
 ## Deploy
 
@@ -56,6 +57,7 @@ firebase deploy            # deploy hosting + firestore rules + indexes
 | `users/{uid}` | `displayName`, `email`, `role` (`pending` / `teacher` / `admin`) |
 | `reports/{id}` | รายงานเวร: `date`, `shift`, `uid`, `teacherName`, `checklist`, `studentsLate`, `studentsAbsent`, `incidents`, `actions`, `suggestions`, `status`, `adminComment` |
 | `reports/{id}/photos/{id}` | รูปภาพประกอบ (JPEG data URL) |
+| `personnel/{id}` | บุคลากร: `name`, `position`, `phone`, `dutyDay` (0 = ไม่มีเวร, 1–5 = จันทร์–ศุกร์), `head` — ทุกคนดูได้ แก้ไขได้เฉพาะผู้ดูแล |
 | `schedules/{YYYY-MM-DD}` | ตารางเวรรายวัน: `teachers[]`, `note` |
 
 สิทธิ์การเข้าถึงกำหนดไว้ใน `firestore.rules`

@@ -4,11 +4,13 @@ import { useAuth } from '../auth-context'
 import { listMyReports, listReportsBetween, listSchedulesBetween } from '../data'
 import { shiftLabel } from '../constants'
 import { scheduleFor } from '../roster'
+import { usePersonnel } from '../personnel-context'
 import { errorMessage, formatThaiDate, parseDateStr, sameName, toDateStr, todayStr } from '../utils'
 import StatusBadge from '../components/StatusBadge'
 
 export default function Dashboard() {
   const { user, profile, isAdmin } = useAuth()
+  const { roster } = usePersonnel()
   const [schedules, setSchedules] = useState({})
   const [myToday, setMyToday] = useState([])
   const [allToday, setAllToday] = useState([])
@@ -35,12 +37,12 @@ export default function Dashboard() {
   }, [today, user.uid, isAdmin])
 
   const isMe = (t) => sameName(t.name, profile.displayName)
-  const todaySchedule = scheduleFor(today, schedules)
+  const todaySchedule = scheduleFor(today, schedules, roster)
   const todayTeachers = todaySchedule.teachers
   const myUpcoming = Array.from({ length: 14 }, (_, i) => {
     const d = parseDateStr(today)
     d.setDate(d.getDate() + i + 1)
-    return scheduleFor(toDateStr(d), schedules)
+    return scheduleFor(toDateStr(d), schedules, roster)
   }).filter((s) => s.teachers.some(isMe))
   const onDutyToday = todayTeachers.some(isMe)
 

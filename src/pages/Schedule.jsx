@@ -3,15 +3,17 @@ import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc } from 'fi
 import { db } from '../firebase'
 import { useAuth } from '../auth-context'
 import { listSchedulesBetween } from '../data'
-import { ROSTER_NAMES, rosterTeachers, scheduleFor } from '../roster'
+import { rosterTeachers, scheduleFor } from '../roster'
+import { usePersonnel } from '../personnel-context'
 import { errorMessage, daysInMonth, formatThaiDate, formatThaiMonth, monthRange, parseDateStr, sameName, thisMonthStr, todayStr } from '../utils'
 
 function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
+  const { roster } = usePersonnel()
   // เลือกครูด้วยชื่อ เพราะครูเข้าใช้งานด้วยชื่อ และอาจยังไม่เคยเข้าระบบ
   const [selected, setSelected] = useState(() => new Set((current?.teachers ?? []).map((t) => t.name)))
   const [names, setNames] = useState(() => {
     const list = (current?.teachers ?? []).map((t) => t.name)
-    ;[...ROSTER_NAMES, ...staff.map((u) => u.displayName)].forEach((name) => {
+    ;[...roster.names, ...staff.map((u) => u.displayName)].forEach((name) => {
       if (!list.some((n) => sameName(n, name))) list.push(name)
     })
     return list
@@ -42,7 +44,7 @@ function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
     setBusy(true)
     setError('')
     try {
-      const head = rosterTeachers(date).find((t) => t.head)?.name
+      const head = rosterTeachers(date, roster).find((t) => t.head)?.name
       const data = {
         date,
         teachers: names
@@ -117,6 +119,7 @@ function ScheduleEditor({ date, current, staff, onSaved, onCancel }) {
 
 export default function Schedule() {
   const { profile, isAdmin } = useAuth()
+  const { roster } = usePersonnel()
   const [month, setMonth] = useState(thisMonthStr)
   const [schedules, setSchedules] = useState({})
   const [staff, setStaff] = useState([])
@@ -165,7 +168,7 @@ export default function Schedule() {
 
   const isMe = (t) => sameName(t.name, profile.displayName)
   const days = month ? daysInMonth(month) : []
-  const shownDays = onlyMine ? days.filter((d) => scheduleFor(d, schedules).teachers.some(isMe)) : days
+  const shownDays = onlyMine ? days.filter((d) => scheduleFor(d, schedules, roster).teachers.some(isMe)) : days
 
   return (
     <div className="card stack">
@@ -185,7 +188,7 @@ export default function Schedule() {
 
       <ul className="schedule">
         {shownDays.map((date) => {
-          const s = scheduleFor(date, schedules)
+          const s = scheduleFor(date, schedules, roster)
           const dow = parseDateStr(date).getDay()
           const weekend = dow === 0 || dow === 6
           const mine = s.teachers.some(isMe)

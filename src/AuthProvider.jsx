@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { onAuthStateChanged, signInAnonymously, signInWithPopup, signOut } from 'firebase/auth'
+import {
+  EmailAuthProvider,
+  onAuthStateChanged,
+  reauthenticateWithCredential,
+  signInAnonymously,
+  signInWithEmailAndPassword,
+  signOut,
+  updatePassword,
+} from 'firebase/auth'
 import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
-import { auth, db, googleProvider } from './firebase'
+import { auth, db } from './firebase'
 import { AuthContext } from './auth-context'
+import { ADMIN_EMAIL } from './constants'
 import { errorMessage } from './utils'
 
 export default function AuthProvider({ children }) {
@@ -10,8 +19,8 @@ export default function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  // ชื่อที่ครูพิมพ์ตอนเข้าใช้งาน ใช้สร้างโปรไฟล์หลัง signInAnonymously สำเร็จ
-  const nameForNewUser = useRef('')
+  // ชื่อและชื่อผู้ใช้งานของคนที่กำลังเข้าระบบ ใช้สร้างโปรไฟล์หลังเข้าระบบสำเร็จ
+  const newUser = useRef({ name: '', username: '' })
 
   useEffect(() => {
     let unsubProfile = () => {}
@@ -32,17 +41,28 @@ export default function AuthProvider({ children }) {
         if (!snap.exists()) {
           if (u.isAnonymous) {
             // ครูที่เข้าด้วยชื่อ ได้สิทธิ์ครูทันทีโดยไม่ต้องรออนุมัติ
-            const name = nameForNewUser.current
-            nameForNewUser.current = ''
+            const { name, username } = newUser.current
+            newUser.current = { name: '', username: '' }
             if (!name) {
               await signOut(auth)
               return
             }
             await setDoc(ref, {
               displayName: name,
+              username,
               email: '',
               photoURL: '',
               role: 'teacher',
+              createdAt: serverTimestamp(),
+            })
+          } else if (u.email === ADMIN_EMAIL) {
+            // บัญชีรหัสผู้ดูแลระบบ ได้สิทธิ์ผู้ดูแลทันที
+            await setDoc(ref, {
+              displayName: newUser.current.name || 'ผู้ดูแลระบบ',
+              username: 'admin',
+              email: u.email,
+              photoURL: '',
+              role: 'admin',
               createdAt: serverTimestamp(),
             })
           } else {
@@ -85,10 +105,20 @@ export default function AuthProvider({ children }) {
       error,
       isAdmin: profile?.role === 'admin',
       isStaff: profile?.role === 'teacher' || profile?.role === 'admin',
-      login: () => signInWithPopup(auth, googleProvider),
-      loginWithName: (name) => {
-        nameForNewUser.current = name
+      // ครูเข้าด้วยชื่อผู้ใช้งาน (เช่น t016) ไม่ต้องใช้อีเมล
+      loginAsPerson: (person) => {
+        newUser.current = { name: person.name, username: person.username }
         return signInAnonymously(auth)
+      },
+      isAdminCode: user?.email === ADMIN_EMAIL,
+      // ผู้ดูแลเข้าด้วยชื่อผู้ใช้งาน admin และรหัสผ่าน (อีเมลภายในระบบ ผู้ใช้ไม่ต้องรู้)
+      loginWithAdminCode: (code, name) => {
+        newUser.current = { name, username: 'admin' }
+        return signInWithEmailAndPassword(auth, ADMIN_EMAIL, code)
+      },
+      changeAdminCode: async (currentCode, newCode) => {
+        await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(ADMIN_EMAIL, currentCode))
+        await updatePassword(auth.currentUser, newCode)
       },
       logout: () => signOut(auth),
     }),

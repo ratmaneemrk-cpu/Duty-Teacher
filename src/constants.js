@@ -1,5 +1,8 @@
 export const SCHOOL_NAME = 'โรงเรียนโคกสีวิทยาสรรค์'
 
+// บัญชีผู้ดูแลระบบที่เข้าด้วยรหัส (Firebase Email/Password) ต้องตรงกับใน firestore.rules
+export const ADMIN_EMAIL = 'admin@duty-teacher.web.app'
+
 export const SHIFTS = [
   { id: 'morning', label: 'ช่วงเช้า (07:00–08:30 น.)' },
   { id: 'noon', label: 'ช่วงกลางวัน (11:30–13:00 น.)' },
@@ -21,6 +24,15 @@ export const ROLES = {
   pending: 'รออนุมัติ',
   teacher: 'ครู',
   admin: 'ผู้ดูแลระบบ',
+}
+
+export const WEEKDAYS = {
+  0: 'ไม่มีเวร',
+  1: 'จันทร์',
+  2: 'อังคาร',
+  3: 'พุธ',
+  4: 'พฤหัสบดี',
+  5: 'ศุกร์',
 }
 
 export const STATUS = {

@@ -1,33 +1,57 @@
 import { useState } from 'react'
 import { useAuth } from '../auth-context'
+import { usePersonnel } from '../personnel-context'
 import { SCHOOL_NAME } from '../constants'
-import { ROSTER_NAMES } from '../roster'
+import { findByUsername } from '../roster'
+
+function loginError(err) {
+  switch (err.code) {
+    case 'auth/operation-not-allowed':
+      return 'ระบบยังไม่เปิดให้เข้าใช้งานด้วยวิธีนี้ กรุณาแจ้งผู้ดูแลระบบ'
+    case 'auth/invalid-credential':
+    case 'auth/invalid-login-credentials':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return 'รหัสผ่านไม่ถูกต้อง'
+    case 'auth/too-many-requests':
+      return 'ใส่รหัสผิดหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่'
+    default:
+      return err.message
+  }
+}
 
 export default function Login() {
-  const { login, loginWithName } = useAuth()
-  const [name, setName] = useState('')
+  const { loginAsPerson, loginWithAdminCode } = useAuth()
+  const { directory } = usePersonnel()
+  const [username, setUsername] = useState('')
+  const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const run = async (fn) => {
+  const person = findByUsername(directory, username)
+  const isAdminUser = username.trim().toLowerCase() === 'admin'
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     setError('')
+    if (!person && !isAdminUser) {
+      setError('ไม่พบชื่อผู้ใช้งานนี้ กรุณาตรวจสอบหรือแจ้งผู้ดูแลระบบ')
+      return
+    }
+    // ครู: รหัสผ่านคือชื่อผู้ใช้งานของตนเอง
+    if (!isAdminUser && code.trim().toLowerCase() !== person.username.toLowerCase()) {
+      setError('รหัสผ่านไม่ถูกต้อง')
+      return
+    }
     setBusy(true)
     try {
-      await fn()
+      if (isAdminUser) await loginWithAdminCode(code, person?.name ?? 'ผู้ดูแลระบบ')
+      else await loginAsPerson(person)
     } catch (err) {
-      if (err.code === 'auth/popup-closed-by-user') return
-      if (err.code === 'auth/operation-not-allowed') setError('ระบบยังไม่เปิดให้เข้าใช้งานด้วยชื่อ กรุณาแจ้งผู้ดูแลระบบ')
-      else setError(err.message)
+      setError(loginError(err))
     } finally {
       setBusy(false)
     }
-  }
-
-  const handleName = (e) => {
-    e.preventDefault()
-    const trimmed = name.trim().replace(/\s+/g, ' ')
-    if (!trimmed) return
-    run(() => loginWithName(trimmed))
   }
 
   return (
@@ -36,34 +60,38 @@ export default function Login() {
         <img src="/favicon.svg" alt="" width="64" height="64" />
         <h1>ระบบรายงานเวรประจำวัน</h1>
         <p className="muted">{SCHOOL_NAME}</p>
-        <form className="stack" onSubmit={handleName}>
+        <form className="stack" onSubmit={handleSubmit}>
           <label className="field">
-            <span>ชื่อ-นามสกุล</span>
+            <span>ชื่อผู้ใช้งาน</span>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="พิมพ์หรือเลือกชื่อจากรายการ"
-              list="roster-names"
-              maxLength={100}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="เช่น t016"
+              autoCapitalize="none"
+              autoComplete="username"
+              maxLength={20}
               autoFocus
               required
             />
-            <datalist id="roster-names">
-              {ROSTER_NAMES.map((n) => (
-                <option key={n} value={n} />
-              ))}
-            </datalist>
           </label>
-          <button type="submit" className="btn btn-primary btn-lg" disabled={busy || !name.trim()}>
+          {person && <p className="highlight">{person.name}</p>}
+          <label className="field">
+            <span>รหัสผ่าน</span>
+            <input
+              type="password"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </label>
+          <button type="submit" className="btn btn-primary btn-lg" disabled={busy || !username.trim() || !code}>
             {busy ? 'กำลังเข้าใช้งาน...' : 'เข้าใช้งาน'}
           </button>
-          <p className="muted small">กรุณาพิมพ์ชื่อให้ตรงกับในตารางเวร เครื่องนี้จะจำชื่อไว้ ครั้งต่อไปไม่ต้องพิมพ์ใหม่</p>
+          <p className="muted small">ใช้ชื่อผู้ใช้งานที่โรงเรียนกำหนด รหัสผ่านเหมือนชื่อผู้ใช้งาน เครื่องนี้จะจำไว้ ครั้งต่อไปไม่ต้องพิมพ์ใหม่</p>
         </form>
         {error && <p className="error">{error}</p>}
-        <button className="btn btn-light btn-sm" onClick={() => run(login)} disabled={busy}>
-          ผู้ดูแลระบบ: เข้าสู่ระบบด้วย Google
-        </button>
       </div>
     </div>
   )

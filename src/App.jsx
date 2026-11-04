@@ -10,6 +10,7 @@ import MyReports from './pages/MyReports'
 import AllReports from './pages/AllReports'
 import Schedule from './pages/Schedule'
 import Users from './pages/Users'
+import Personnel from './pages/Personnel'
 
 function AdminOnly({ children }) {
   const { isAdmin } = useAuth()
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="reports/:id/edit" element={<ReportForm />} />
         <Route path="my-reports" element={<MyReports />} />
         <Route path="schedule" element={<Schedule />} />
+        <Route path="personnel" element={<Personnel />} />
         <Route path="admin/reports" element={<AdminOnly><AllReports /></AdminOnly>} />
         <Route path="admin/users" element={<AdminOnly><Users /></AdminOnly>} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -32,6 +32,7 @@ export default function Layout() {
           <NavLink to="/reports/new" onClick={close}>เขียนรายงาน</NavLink>
           <NavLink to="/my-reports" onClick={close}>รายงานของฉัน</NavLink>
           <NavLink to="/schedule" onClick={close}>ตารางเวร</NavLink>
+          <NavLink to="/personnel" onClick={close}>บุคลากร</NavLink>
           {isAdmin && (
             <>
               <NavLink to="/admin/reports" onClick={close}>รายงานทั้งหมด</NavLink>
