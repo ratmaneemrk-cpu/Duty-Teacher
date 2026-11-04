@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth-context'
-import { saveDutyRecord } from '../data'
+import { getReportPhotos, saveReport } from '../data'
 import { CHECKLIST, OTHER_DUTY } from '../constants'
 import { errorMessage } from '../utils'
 import DutyChecklist from './DutyChecklist'
+import PhotoPicker from './PhotoPicker'
 import StatusBadge from './StatusBadge'
 
 /** ติ๊กหน้าที่ที่ปฏิบัติและบันทึกเหตุการณ์ของวันที่เป็นเวร (บันทึกเป็นรายงานเวรตลอดวัน) */
@@ -15,11 +16,34 @@ export default function TodayDuty({ date, report, onSaved }) {
   )
   const [otherDuty, setOtherDuty] = useState(report?.otherDuty ?? '')
   const [incidents, setIncidents] = useState(report?.incidents ?? '')
+  const [photos, setPhotos] = useState([])
+  const [existingPhotoIds, setExistingPhotoIds] = useState([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const locked = report?.status === 'acknowledged'
   const done = CHECKLIST.filter((c) => checklist[c.id]).length
+
+  // โหลดรูปเดิมของรายงานวันนี้
+  useEffect(() => {
+    if (!report?.photoCount) return
+    let active = true
+    getReportPhotos(report.id)
+      .then((pics) => {
+        if (!active) return
+        setPhotos(pics.map((p) => ({ id: p.id, data: p.data })))
+        setExistingPhotoIds(pics.map((p) => p.id))
+      })
+      .catch((err) => active && setError(errorMessage(err)))
+    return () => {
+      active = false
+    }
+  }, [report?.id, report?.photoCount])
+
+  const changePhotos = (next) => {
+    setMessage('')
+    setPhotos(next)
+  }
 
   const toggle = (id) => {
     setMessage('')
@@ -33,11 +57,15 @@ export default function TodayDuty({ date, report, onSaved }) {
     setMessage('')
     try {
       const fields = { checklist, otherDuty: otherDuty.trim(), incidents: incidents.trim() || 'ปกติ' }
-      const id = await saveDutyRecord({
+      const id = await saveReport({
         id: report?.id,
         fields: report
           ? fields
           : {
+              studentsLate: 0,
+              studentsAbsent: 0,
+              actions: '',
+              suggestions: '',
               ...fields,
               date,
               shift: 'allday',
@@ -45,6 +73,8 @@ export default function TodayDuty({ date, report, onSaved }) {
               teacherName: profile.displayName,
               teacherUsername: profile.username ?? '',
             },
+        photos,
+        existingPhotoIds,
       })
       setMessage('บันทึกเรียบร้อยแล้ว')
       onSaved(id)
@@ -90,13 +120,14 @@ export default function TodayDuty({ date, report, onSaved }) {
           disabled={locked}
         />
       </label>
+      <PhotoPicker photos={photos} onChange={changePhotos} onError={setError} disabled={locked} />
       {locked && <p className="muted small">ผู้บริหารรับทราบรายงานนี้แล้ว จึงแก้ไขไม่ได้</p>}
       {error && <p className="error">{error}</p>}
       {message && <p className="highlight">{message}</p>}
       <div className="actions">
         {report && (
           <Link className="btn btn-light" to={report.status === 'submitted' ? `/reports/${report.id}/edit` : `/reports/${report.id}`}>
-            {report.status === 'submitted' ? 'เพิ่มรายละเอียด / รูปภาพ' : 'ดูรายงาน'}
+            {report.status === 'submitted' ? 'เพิ่มรายละเอียด' : 'ดูรายงาน'}
           </Link>
         )}
         {!locked && (

@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { getReport, getReportPhotos, saveReport } from '../data'
-import { CHECKLIST, MAX_PHOTOS, OTHER_DUTY, SHIFTS } from '../constants'
-import { compressImage, errorMessage, todayStr } from '../utils'
+import { CHECKLIST, OTHER_DUTY, SHIFTS } from '../constants'
+import { errorMessage, todayStr } from '../utils'
 import DutyChecklist from '../components/DutyChecklist'
+import PhotoPicker from '../components/PhotoPicker'
 
 const emptyForm = () => ({
   date: todayStr(),
@@ -68,19 +69,6 @@ export default function ReportForm() {
     setForm((f) => ({ ...f, [key]: Math.max(0, parseInt(e.target.value, 10) || 0) }))
   const toggle = (key) => () =>
     setForm((f) => ({ ...f, checklist: { ...f.checklist, [key]: !f.checklist[key] } }))
-
-  const addPhotos = async (e) => {
-    const files = [...e.target.files].slice(0, MAX_PHOTOS - photos.length)
-    e.target.value = ''
-    try {
-      const datas = await Promise.all(files.map((f) => compressImage(f)))
-      setPhotos((p) => [...p, ...datas.map((data) => ({ data }))])
-    } catch (err) {
-      setError(errorMessage(err))
-    }
-  }
-
-  const removePhoto = (index) => setPhotos((p) => p.filter((_, i) => i !== index))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -171,25 +159,7 @@ export default function ReportForm() {
         <textarea rows="3" value={form.suggestions} onChange={set('suggestions')} />
       </label>
 
-      <div className="field">
-        <span>รูปภาพประกอบ (ไม่เกิน {MAX_PHOTOS} รูป)</span>
-        <div className="photo-grid">
-          {photos.map((p, i) => (
-            <div key={p.id ?? `new-${i}`} className="photo">
-              <img src={p.data} alt={`รูปที่ ${i + 1}`} />
-              <button type="button" className="photo-remove" onClick={() => removePhoto(i)} aria-label="ลบรูป">
-                ×
-              </button>
-            </div>
-          ))}
-          {photos.length < MAX_PHOTOS && (
-            <label className="photo photo-add">
-              <input type="file" accept="image/*" multiple onChange={addPhotos} hidden />
-              + เพิ่มรูป
-            </label>
-          )}
-        </div>
-      </div>
+      <PhotoPicker photos={photos} onChange={setPhotos} onError={setError} />
 
       {error && <p className="error">{error}</p>}
 
