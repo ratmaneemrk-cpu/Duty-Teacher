@@ -12,7 +12,6 @@ const emptyForm = () => ({
   shift: SHIFTS[0].id,
   checklist: Object.fromEntries([...CHECKLIST, OTHER_DUTY].map((c) => [c.id, false])),
   otherDuty: '',
-  studentsLate: 0,
   studentsAbsent: 0,
   incidents: '',
   actions: '',
@@ -80,7 +79,6 @@ export default function ReportForm() {
         shift: form.shift,
         checklist: form.checklist,
         otherDuty: form.otherDuty.trim(),
-        studentsLate: form.studentsLate,
         studentsAbsent: form.studentsAbsent,
         incidents: form.incidents.trim(),
         actions: form.actions.trim(),
@@ -135,16 +133,10 @@ export default function ReportForm() {
         />
       </fieldset>
 
-      <div className="grid-2">
-        <label className="field">
-          <span>จำนวนนักเรียนมาสาย (คน)</span>
-          <input type="number" min="0" inputMode="numeric" value={form.studentsLate} onChange={setNumber('studentsLate')} />
-        </label>
-        <label className="field">
-          <span>จำนวนนักเรียนขาดเรียน (คน)</span>
-          <input type="number" min="0" inputMode="numeric" value={form.studentsAbsent} onChange={setNumber('studentsAbsent')} />
-        </label>
-      </div>
+      <label className="field">
+        <span>จำนวนนักเรียนขาดเรียน (คน)</span>
+        <input type="number" min="0" inputMode="numeric" value={form.studentsAbsent} onChange={setNumber('studentsAbsent')} />
+      </label>
 
       <label className="field">
         <span>เหตุการณ์ที่พบ / เหตุการณ์ผิดปกติ</span>

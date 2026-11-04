@@ -86,6 +86,7 @@ export default function ReportDetail() {
 
       <article className="card report">
         <header className="report-head">
+          <img className="report-logo" src="/logo.png" alt="ตราโรงเรียน" width="57" height="80" />
           <h1>แบบรายงานการปฏิบัติหน้าที่เวรประจำวัน</h1>
           <p>{SCHOOL_NAME}</p>
         </header>
@@ -108,7 +109,6 @@ export default function ReportDetail() {
         </ul>
 
         <dl className="meta">
-          <div><dt>นักเรียนมาสาย</dt><dd>{report.studentsLate ?? 0} คน</dd></div>
           <div><dt>นักเรียนขาดเรียน</dt><dd>{report.studentsAbsent ?? 0} คน</dd></div>
         </dl>
 

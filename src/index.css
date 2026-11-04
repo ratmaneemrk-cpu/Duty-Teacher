@@ -108,9 +108,12 @@ code {
   gap: 0.6rem;
 }
 
-.brand img {
+.brand-logo {
+  height: 46px;
+  width: auto;
+  padding: 3px 5px;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .brand-title {
@@ -981,5 +984,24 @@ th {
 
   .cal-info {
     font-size: 0.65rem;
+  }
+}
+
+/* ---------- school emblem ---------- */
+.login-logo {
+  height: 128px;
+  width: auto;
+}
+
+.report-logo {
+  display: block;
+  height: 80px;
+  width: auto;
+  margin: 0 auto 0.4rem;
+}
+
+@media (max-width: 600px) {
+  .brand-logo {
+    height: 40px;
   }
 }

@@ -57,7 +57,7 @@ export default function Login() {
   return (
     <div className="center-screen">
       <div className="card narrow login-card">
-        <img src="/favicon.svg" alt="" width="64" height="64" />
+        <img className="login-logo" src="/logo.png" alt="ตราโรงเรียนโคกสีวิทยาสรรค์" width="91" height="128" />
         <h1>ระบบรายงานเวรประจำวัน</h1>
         <p className="muted">{SCHOOL_NAME}</p>
         <form className="stack" onSubmit={handleSubmit}>

@@ -18,7 +18,7 @@ export default function Layout() {
     <div className="app">
       <header className="topbar no-print">
         <div className="brand">
-          <img src="/favicon.svg" alt="" width="32" height="32" />
+          <img className="brand-logo" src="/logo.png" alt="ตราโรงเรียน" width="33" height="46" />
           <div>
             <div className="brand-title">รายงานเวรประจำวัน</div>
             <div className="brand-sub">{SCHOOL_NAME}</div>

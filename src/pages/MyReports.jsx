@@ -34,7 +34,6 @@ export default function MyReports() {
               <tr>
                 <th>วันที่</th>
                 <th>ช่วงเวลา</th>
-                <th>มาสาย</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
@@ -43,7 +42,6 @@ export default function MyReports() {
                 <tr key={r.id}>
                   <td><Link to={`/reports/${r.id}`}>{formatThaiDate(r.date, false)}</Link></td>
                   <td>{shiftLabel(r.shift)}</td>
-                  <td>{r.studentsLate ?? 0}</td>
                   <td><StatusBadge status={r.status} /></td>
                 </tr>
               ))}
