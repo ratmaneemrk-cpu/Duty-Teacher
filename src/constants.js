@@ -39,7 +39,8 @@ export const STATUS = {
   acknowledged: 'รับทราบแล้ว',
 }
 
-export const MAX_PHOTOS = 4
+// ต้องตรงกับ firestore.rules (photoCount <= 2)
+export const MAX_PHOTOS = 2
 
 export function shiftLabel(id) {
   return SHIFTS.find((s) => s.id === id)?.label ?? id

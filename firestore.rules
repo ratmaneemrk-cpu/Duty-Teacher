@@ -49,16 +49,23 @@ service cloud.firestore {
     }
 
     // รายงานเวร: ครูเห็น/แก้ได้เฉพาะของตนเองที่ยังไม่ถูกรับทราบ ผู้ดูแลเห็นทั้งหมด
+    // รูปภาพต่อรายงานไม่เกิน 2 รูป (MAX_PHOTOS ใน src/constants.js)
+    function photoLimitOk() {
+      return !('photoCount' in request.resource.data) || request.resource.data.photoCount <= 2;
+    }
+
     match /reports/{id} {
       allow read: if isAdmin() || (isStaff() && resource.data.uid == request.auth.uid);
       allow create: if isStaff()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.status == 'submitted'
+        && photoLimitOk()
         && !request.resource.data.keys().hasAny(['adminComment', 'acknowledgedBy', 'acknowledgedAt']);
       allow update: if isAdmin()
         || (isStaff()
             && resource.data.uid == request.auth.uid
             && resource.data.status == 'submitted'
+            && photoLimitOk()
             && !request.resource.data.diff(resource.data).affectedKeys()
                 .hasAny(['uid', 'status', 'adminComment', 'acknowledgedBy', 'acknowledgedAt']));
       allow delete: if isAdmin()
