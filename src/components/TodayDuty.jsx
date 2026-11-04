@@ -2,16 +2,18 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { saveDutyRecord } from '../data'
-import { CHECKLIST } from '../constants'
+import { CHECKLIST, OTHER_DUTY } from '../constants'
 import { errorMessage } from '../utils'
+import DutyChecklist from './DutyChecklist'
 import StatusBadge from './StatusBadge'
 
 /** ติ๊กหน้าที่ที่ปฏิบัติและบันทึกเหตุการณ์ของวันที่เป็นเวร (บันทึกเป็นรายงานเวรตลอดวัน) */
 export default function TodayDuty({ date, report, onSaved }) {
   const { user, profile } = useAuth()
   const [checklist, setChecklist] = useState(() =>
-    Object.fromEntries(CHECKLIST.map((c) => [c.id, Boolean(report?.checklist?.[c.id])])),
+    Object.fromEntries([...CHECKLIST, OTHER_DUTY].map((c) => [c.id, Boolean(report?.checklist?.[c.id])])),
   )
+  const [otherDuty, setOtherDuty] = useState(report?.otherDuty ?? '')
   const [incidents, setIncidents] = useState(report?.incidents ?? '')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -30,7 +32,7 @@ export default function TodayDuty({ date, report, onSaved }) {
     setError('')
     setMessage('')
     try {
-      const fields = { checklist, incidents: incidents.trim() || 'ปกติ' }
+      const fields = { checklist, otherDuty: otherDuty.trim(), incidents: incidents.trim() || 'ปกติ' }
       const id = await saveDutyRecord({
         id: report?.id,
         fields: report
@@ -63,14 +65,17 @@ export default function TodayDuty({ date, report, onSaved }) {
         <legend>
           หน้าที่ที่ปฏิบัติ ({done}/{CHECKLIST.length})
         </legend>
-        <div className="checklist">
-          {CHECKLIST.map((c) => (
-            <label key={c.id} className="check">
-              <input type="checkbox" checked={checklist[c.id]} onChange={() => toggle(c.id)} />
-              <span>{c.label}</span>
-            </label>
-          ))}
-        </div>
+        <DutyChecklist
+          checklist={checklist}
+          otherDuty={otherDuty}
+          onToggle={toggle}
+          onOtherChange={(value) => {
+            setMessage('')
+            setOtherDuty(value)
+            // พิมพ์งานที่ได้รับมอบหมายแล้ว ติ๊กข้อนี้ให้อัตโนมัติ
+            if (value.trim()) setChecklist((c) => ({ ...c, [OTHER_DUTY.id]: true }))
+          }}
+        />
       </fieldset>
       <label className="field">
         <span>บันทึกเหตุการณ์</span>

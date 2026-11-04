@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { getReport, getReportPhotos, saveReport } from '../data'
-import { CHECKLIST, MAX_PHOTOS, SHIFTS } from '../constants'
+import { CHECKLIST, MAX_PHOTOS, OTHER_DUTY, SHIFTS } from '../constants'
 import { compressImage, errorMessage, todayStr } from '../utils'
+import DutyChecklist from '../components/DutyChecklist'
 
 const emptyForm = () => ({
   date: todayStr(),
   shift: SHIFTS[0].id,
-  checklist: Object.fromEntries(CHECKLIST.map((c) => [c.id, false])),
+  checklist: Object.fromEntries([...CHECKLIST, OTHER_DUTY].map((c) => [c.id, false])),
+  otherDuty: '',
   studentsLate: 0,
   studentsAbsent: 0,
   incidents: '',
@@ -89,6 +91,7 @@ export default function ReportForm() {
         date: form.date,
         shift: form.shift,
         checklist: form.checklist,
+        otherDuty: form.otherDuty.trim(),
         studentsLate: form.studentsLate,
         studentsAbsent: form.studentsAbsent,
         incidents: form.incidents.trim(),
@@ -130,14 +133,18 @@ export default function ReportForm() {
 
       <fieldset className="field">
         <legend>รายการปฏิบัติหน้าที่</legend>
-        <div className="checklist">
-          {CHECKLIST.map((c) => (
-            <label key={c.id} className="check">
-              <input type="checkbox" checked={form.checklist[c.id]} onChange={toggle(c.id)} />
-              <span>{c.label}</span>
-            </label>
-          ))}
-        </div>
+        <DutyChecklist
+          checklist={form.checklist}
+          otherDuty={form.otherDuty}
+          onToggle={(key) => toggle(key)()}
+          onOtherChange={(value) =>
+            setForm((f) => ({
+              ...f,
+              otherDuty: value,
+              checklist: value.trim() ? { ...f.checklist, [OTHER_DUTY.id]: true } : f.checklist,
+            }))
+          }
+        />
       </fieldset>
 
       <div className="grid-2">

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { acknowledgeReport, deleteReport, getReport, getReportPhotos } from '../data'
-import { CHECKLIST, SCHOOL_NAME, shiftLabel } from '../constants'
+import { CHECKLIST, OTHER_DUTY, SCHOOL_NAME, shiftLabel } from '../constants'
 import { errorMessage, formatThaiDate, formatTimestamp } from '../utils'
 import StatusBadge from '../components/StatusBadge'
 
@@ -99,9 +99,10 @@ export default function ReportDetail() {
 
         <h2>รายการปฏิบัติหน้าที่</h2>
         <ul className="checklist-view">
-          {CHECKLIST.map((c) => (
+          {[...CHECKLIST, OTHER_DUTY].map((c, i) => (
             <li key={c.id} className={report.checklist?.[c.id] ? 'done' : 'not-done'}>
-              {report.checklist?.[c.id] ? '☑' : '☐'} {c.label}
+              {report.checklist?.[c.id] ? '☑' : '☐'} {i + 1}. {c.label}
+              {c.id === OTHER_DUTY.id && report.otherDuty && `: ${report.otherDuty}`}
             </li>
           ))}
         </ul>

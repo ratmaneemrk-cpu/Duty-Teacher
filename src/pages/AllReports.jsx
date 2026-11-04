@@ -58,11 +58,13 @@ export default function AllReports() {
     const header = [
       'วันที่', 'ช่วงเวลา', 'ครูเวร', 'ชื่อผู้ใช้งาน',
       ...CHECKLIST.map((c) => c.label),
+      'อื่นๆ ที่ได้รับมอบหมาย',
       'มาสาย', 'ขาดเรียน', 'เหตุการณ์', 'การแก้ไข', 'ข้อเสนอแนะ', 'สถานะ', 'ความเห็นผู้บริหาร',
     ]
     const rows = [...shown].reverse().map((r) => [
       r.date, shiftLabel(r.shift), r.teacherName, r.teacherUsername ?? '',
       ...CHECKLIST.map((c) => (r.checklist?.[c.id] ? '✓' : '')),
+      r.otherDuty ?? '',
       r.studentsLate ?? 0, r.studentsAbsent ?? 0, r.incidents, r.actions, r.suggestions,
       STATUS[r.status] ?? r.status, r.adminComment ?? '',
     ])
