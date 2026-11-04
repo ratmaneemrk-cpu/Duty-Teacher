@@ -134,3 +134,13 @@ export function errorMessage(err) {
   if (err.code === 'unavailable') return 'เชื่อมต่อฐานข้อมูลไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต'
   return err.message || String(err)
 }
+
+/** ชื่อเล่นสั้นๆ สำหรับปฏิทิน: ตัดคำนำหน้าและนามสกุล เช่น "นายกมล ไสโยธา" → "กมล" */
+export function shortName(name) {
+  let n = (name ?? '').trim()
+  for (let prev; prev !== n; ) {
+    prev = n
+    n = n.replace(TITLE, '')
+  }
+  return n.replace(/^ผอ\.\s*/, '').split(/\s+/)[0] || name
+}

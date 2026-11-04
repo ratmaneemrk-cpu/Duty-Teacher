@@ -9,6 +9,7 @@ import { errorMessage, formatThaiDate, parseDateStr, sameName, toDateStr, todayS
 import StatusBadge from '../components/StatusBadge'
 import TodayDuty from '../components/TodayDuty'
 import DailyStatus from '../components/DailyStatus'
+import DutyCalendar from '../components/DutyCalendar'
 
 export default function Dashboard() {
   const { user, profile, isAdmin } = useAuth()
@@ -58,6 +59,7 @@ export default function Dashboard() {
   return (
     <div className="stack">
       {isAdmin && <DailyStatus />}
+      {isAdmin && <DutyCalendar mode="admin" />}
 
       {showTeacherView && (
         <section className="card hero">
@@ -108,19 +110,6 @@ export default function Dashboard() {
           )}
 
           <section className="card">
-            <h2>เวรของฉันใน 14 วันข้างหน้า</h2>
-            {myUpcoming.length ? (
-              <ul className="plain-list">
-                {myUpcoming.map((s) => (
-                  <li key={s.date}>{formatThaiDate(s.date)}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted">ไม่มีเวร</p>
-            )}
-          </section>
-
-          <section className="card">
             <h2>รายงานของฉันวันนี้</h2>
             {myToday.length ? (
               <ul className="plain-list">
@@ -136,6 +125,8 @@ export default function Dashboard() {
           </section>
         </div>
       )}
+
+      {!isAdmin && <DutyCalendar mode="mine" />}
     </div>
   )
 }

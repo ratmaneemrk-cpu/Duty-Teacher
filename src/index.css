@@ -832,3 +832,154 @@ th {
   background: var(--accent);
   color: var(--accent-text);
 }
+
+/* ---------- duty calendar ---------- */
+.cal-month {
+  min-width: 9rem;
+  text-align: center;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.cal-head {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 0.2rem 0;
+}
+
+.cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 76px;
+  padding: 4px 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.cal-day.weekend {
+  background: #f3f5ef;
+  color: var(--muted);
+}
+
+.cal-day.duty {
+  background: var(--primary-soft);
+  border-color: #86efac;
+}
+
+.cal-day.done {
+  background: #dcfce7;
+  border-color: var(--primary);
+}
+
+.cal-day.missing {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.cal-day.today {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.cal-day.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.cal-num {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.cal-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.cal-count {
+  font-weight: 700;
+  color: var(--primary-hover);
+}
+
+.cal-names {
+  color: var(--text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+}
+
+.dot {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 3px;
+  vertical-align: -1px;
+  border: 1px solid var(--border);
+}
+
+.dot.duty {
+  background: var(--primary-soft);
+  border-color: #86efac;
+}
+
+.dot.done {
+  background: #dcfce7;
+  border-color: var(--primary);
+}
+
+.dot.missing {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.cal-detail {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: var(--primary-soft);
+}
+
+.ok {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .calendar {
+    gap: 2px;
+  }
+
+  .cal-day {
+    min-height: 54px;
+    padding: 3px;
+  }
+
+  /* มือถือจอแคบ: ไม่แสดงชื่อในช่อง แตะวันที่เพื่อดูรายชื่อ */
+  .cal-names {
+    display: none;
+  }
+
+  .cal-info {
+    font-size: 0.65rem;
+  }
+}
