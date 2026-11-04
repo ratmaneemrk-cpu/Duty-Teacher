@@ -43,6 +43,8 @@ export const DEFAULT_WEEKLY = {
 }
 
 // ชื่อผู้ใช้งานของบุคลากร (โฟลเดอร์ ชื่อผู้ใช้) ชื่อที่ตรงกับตารางเวรจะใช้ตามตารางเวร
+// ผู้ที่อยู่ใน ADMINS เข้าระบบด้วยรหัสผ่านผู้ดูแล (เอกสารใน adminSecrets) และได้สิทธิ์ผู้ดูแล
+const ADMINS = ['t999']
 const ADMINISTRATION = 'ฝ่ายบริหาร/วิชาการ'
 const TEACHER = 'ครูผู้สอน'
 const USERNAMES = [
@@ -83,7 +85,8 @@ export function defaultPersonnel() {
   return USERNAMES.map(([username, name, position], order) => {
     const [day, names] = Object.entries(DEFAULT_WEEKLY).find(([, list]) => list.some((n) => sameName(n, name))) ?? [0, []]
     const index = names.findIndex((n) => sameName(n, name))
-    return { username, name, position, phone: '', dutyDay: Number(day), head: index === 0, order }
+    const admin = ADMINS.includes(username)
+    return { username, name, position, phone: '', dutyDay: Number(day), head: index === 0, admin, order }
   })
 }
 

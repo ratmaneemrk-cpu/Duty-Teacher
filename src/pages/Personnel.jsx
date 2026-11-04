@@ -210,6 +210,7 @@ export default function Personnel() {
                     <td>
                       {WEEKDAYS[p.dutyDay ?? 0]}
                       {p.head && <strong> (หัวหน้าครูเวร)</strong>}
+                      {p.admin && <strong> · ผู้ดูแลระบบ</strong>}
                     </td>
                     {isAdmin && (
                       <td className="row-actions">

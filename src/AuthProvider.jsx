@@ -94,16 +94,19 @@ export default function AuthProvider({ children }) {
         return signInAnonymously(auth)
       },
       // ผู้ดูแลเข้าด้วยชื่อผู้ใช้งาน admin และรหัสผ่าน ไม่ต้องใช้อีเมล
-      loginWithAdminCode: (code, name) => {
+      loginWithAdminCode: (code, name, username) => {
         setLoginError('')
-        newUser.current = { name, username: 'admin', adminCode: code }
+        newUser.current = { name, username, adminCode: code }
         return signInAnonymously(auth)
       },
-      // รหัสผ่านผู้ดูแลคือ id ของเอกสารใน adminSecrets (อ่านได้เฉพาะผู้ดูแล)
+      // รหัสผ่านผู้ดูแลคือ id ของเอกสารใน adminSecrets ผูกกับชื่อผู้ใช้งาน (อ่านได้เฉพาะผู้ดูแล)
       changeAdminCode: async (currentCode, newCode) => {
+        const username = profile?.username
         const current = await getDoc(doc(db, 'adminSecrets', currentCode))
-        if (!current.exists()) throw new Error('รหัสปัจจุบันไม่ถูกต้อง')
-        await setDoc(doc(db, 'adminSecrets', newCode), { createdAt: serverTimestamp() })
+        if (!current.exists() || current.data().username !== username) throw new Error('รหัสปัจจุบันไม่ถูกต้อง')
+        const next = await getDoc(doc(db, 'adminSecrets', newCode))
+        if (next.exists()) throw new Error('ใช้รหัสนี้ไม่ได้ กรุณาตั้งรหัสอื่น')
+        await setDoc(doc(db, 'adminSecrets', newCode), { username, createdAt: serverTimestamp() })
         await deleteDoc(current.ref)
       },
       logout: () => signOut(auth),

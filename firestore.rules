@@ -9,10 +9,15 @@ service cloud.firestore {
       return request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
     // รหัสผ่านผู้ดูแลระบบคือ id ของเอกสารใน adminSecrets (ไม่มีใครอ่านได้ก่อนเป็นผู้ดูแล)
+    // แต่ละรหัสผูกกับชื่อผู้ใช้งาน (ฟิลด์ username) ใช้กับชื่อผู้ใช้งานอื่นไม่ได้
+    function adminSecret(code) {
+      return /databases/$(database)/documents/adminSecrets/$(code);
+    }
     function hasAdminCode() {
       return request.resource.data.adminCode is string
         && request.resource.data.adminCode.size() > 0
-        && exists(/databases/$(database)/documents/adminSecrets/$(request.resource.data.adminCode));
+        && exists(adminSecret(request.resource.data.adminCode))
+        && get(adminSecret(request.resource.data.adminCode)).data.username == request.resource.data.username;
     }
     function myRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;

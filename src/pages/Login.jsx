@@ -29,7 +29,8 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
 
   const person = findByUsername(directory, username)
-  const isAdminUser = username.trim().toLowerCase() === 'admin'
+  // ผู้ดูแล: ชื่อผู้ใช้งาน admin หรือบุคลากรที่มีสิทธิ์ผู้ดูแล ตรวจรหัสผ่านด้วย security rules
+  const isAdminUser = username.trim().toLowerCase() === 'admin' || Boolean(person?.admin)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -45,7 +46,7 @@ export default function Login() {
     }
     setBusy(true)
     try {
-      if (isAdminUser) await loginWithAdminCode(code, person?.name ?? 'ผู้ดูแลระบบ')
+      if (isAdminUser) await loginWithAdminCode(code, person?.name ?? 'ผู้ดูแลระบบ', person?.username ?? 'admin')
       else await loginAsPerson(person)
     } catch (err) {
       setError(loginError(err))
