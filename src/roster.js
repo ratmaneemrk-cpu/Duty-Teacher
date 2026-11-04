@@ -46,7 +46,7 @@ export const DEFAULT_WEEKLY = {
 const ADMINISTRATION = 'ฝ่ายบริหาร/วิชาการ'
 const TEACHER = 'ครูผู้สอน'
 const USERNAMES = [
-  ['admin', 'ผอ.สราวุธ วิเชียรลม', ADMINISTRATION],
+  ['t999', 'ผอ.สราวุธ วิเชียรลม', ADMINISTRATION],
   ['t099', 'นางนงลักษณ์ ชาญนรา', ADMINISTRATION],
   ['t002', 'นางประเสริฐ จันชมภู', TEACHER],
   ['t003', 'นายสุรสิทธิ์ ไกยฝ่าย', TEACHER],

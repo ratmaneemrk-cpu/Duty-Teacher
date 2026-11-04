@@ -110,6 +110,10 @@ export default function Personnel() {
   }
 
   const save = (data, id) => {
+    if (data.username === 'admin') {
+      setError('ชื่อผู้ใช้งาน admin สงวนไว้สำหรับผู้ดูแลระบบ')
+      return
+    }
     const taken = personnel.find((p) => p.id !== id && p.username === data.username)
     if (taken) {
       setError(`ชื่อผู้ใช้งาน ${data.username} ถูกใช้แล้วโดย ${taken.name}`)
