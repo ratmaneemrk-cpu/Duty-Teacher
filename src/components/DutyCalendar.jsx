@@ -29,7 +29,7 @@ function addMonths(ym, n) {
  * mode="admin": ครูเวรทุกคนในแต่ละวัน พร้อมสถานะการบันทึก เลือกดูครูทีละคนได้
  * mode="mine": วันเวรของฉัน
  */
-export default function DutyCalendar({ mode }) {
+export default function DutyCalendar({ mode, onPickDate, version = 0 }) {
   const { user, profile } = useAuth()
   const { roster, personnel } = usePersonnel()
   const [month, setMonth] = useState(thisMonthStr)
@@ -51,7 +51,7 @@ export default function DutyCalendar({ mode }) {
     return () => {
       active = false
     }
-  }, [month, admin, user.uid])
+  }, [month, admin, user.uid, version])
 
   const days = daysInMonth(month)
   const blanks = parseDateStr(days[0]).getDay()
@@ -165,6 +165,13 @@ export default function DutyCalendar({ mode }) {
             <p className="muted">ไม่มีเวร</p>
           )}
           {selectedInfo.schedule.note && <p className="note">หมายเหตุ: {selectedInfo.schedule.note}</p>}
+          {onPickDate &&
+            selected <= today &&
+            selectedInfo.teachers.some((t) => sameName(t.name, profile.displayName) && !t.recorded) && (
+              <button className="btn btn-primary btn-sm" onClick={() => onPickDate(selected)}>
+                {selected === today ? 'บันทึกเวรวันนี้' : 'บันทึกย้อนหลัง'}
+              </button>
+            )}
         </div>
       )}
     </section>

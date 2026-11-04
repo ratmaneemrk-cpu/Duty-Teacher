@@ -29,7 +29,6 @@ export default function Layout() {
         </button>
         <nav className={menuOpen ? 'nav open' : 'nav'}>
           <NavLink to="/" end onClick={close}>หน้าแรก</NavLink>
-          <NavLink to="/reports/new" onClick={close}>เขียนรายงาน</NavLink>
           <NavLink to="/my-reports" onClick={close}>รายงานของฉัน</NavLink>
           <NavLink to="/schedule" onClick={close}>ตารางเวร</NavLink>
           <NavLink to="/personnel" onClick={close}>บุคลากร</NavLink>

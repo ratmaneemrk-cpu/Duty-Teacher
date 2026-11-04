@@ -3,19 +3,21 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { getReportPhotos, saveReport } from '../data'
 import { CHECKLIST, OTHER_DUTY } from '../constants'
-import { errorMessage } from '../utils'
+import { errorMessage, formatThaiDate } from '../utils'
 import DutyChecklist from './DutyChecklist'
 import PhotoPicker from './PhotoPicker'
 import StatusBadge from './StatusBadge'
 
 /** ติ๊กหน้าที่ที่ปฏิบัติและบันทึกเหตุการณ์ของวันที่เป็นเวร (บันทึกเป็นรายงานเวรตลอดวัน) */
-export default function TodayDuty({ date, report, onSaved }) {
+export default function TodayDuty({ date, backdated, report, onSaved }) {
   const { user, profile } = useAuth()
   const [checklist, setChecklist] = useState(() =>
     Object.fromEntries([...CHECKLIST, OTHER_DUTY].map((c) => [c.id, Boolean(report?.checklist?.[c.id])])),
   )
   const [otherDuty, setOtherDuty] = useState(report?.otherDuty ?? '')
   const [incidents, setIncidents] = useState(report?.incidents ?? '')
+  const [actions, setActions] = useState(report?.actions ?? '')
+  const [suggestions, setSuggestions] = useState(report?.suggestions ?? '')
   const [photos, setPhotos] = useState([])
   const [existingPhotoIds, setExistingPhotoIds] = useState([])
   const [busy, setBusy] = useState(false)
@@ -56,14 +58,18 @@ export default function TodayDuty({ date, report, onSaved }) {
     setError('')
     setMessage('')
     try {
-      const fields = { checklist, otherDuty: otherDuty.trim(), incidents: incidents.trim() || 'ปกติ' }
+      const fields = {
+        checklist,
+        otherDuty: otherDuty.trim(),
+        incidents: incidents.trim() || 'ปกติ',
+        actions: actions.trim(),
+        suggestions: suggestions.trim(),
+      }
       const id = await saveReport({
         id: report?.id,
         fields: report
           ? fields
           : {
-              actions: '',
-              suggestions: '',
               ...fields,
               date,
               shift: 'allday',
@@ -86,7 +92,7 @@ export default function TodayDuty({ date, report, onSaved }) {
   return (
     <form className="card stack duty-today" onSubmit={save}>
       <div className="hero">
-        <h2>บันทึกการปฏิบัติหน้าที่เวรวันนี้</h2>
+        <h2>{backdated ? `บันทึกเวรย้อนหลัง ${formatThaiDate(date)}` : 'บันทึกการปฏิบัติหน้าที่เวรวันนี้'}</h2>
         {report && <StatusBadge status={report.status} />}
       </div>
       <fieldset className="field" disabled={locked}>
@@ -118,14 +124,40 @@ export default function TodayDuty({ date, report, onSaved }) {
           disabled={locked}
         />
       </label>
+      <label className="field">
+        <span>การดำเนินการแก้ไข</span>
+        <textarea
+          rows="2"
+          value={actions}
+          onChange={(e) => {
+            setMessage('')
+            setActions(e.target.value)
+          }}
+          placeholder="ถ้ามี"
+          disabled={locked}
+        />
+      </label>
+      <label className="field">
+        <span>ข้อเสนอแนะ</span>
+        <textarea
+          rows="2"
+          value={suggestions}
+          onChange={(e) => {
+            setMessage('')
+            setSuggestions(e.target.value)
+          }}
+          placeholder="ถ้ามี"
+          disabled={locked}
+        />
+      </label>
       <PhotoPicker photos={photos} onChange={changePhotos} onError={setError} disabled={locked} />
       {locked && <p className="muted small">ผู้บริหารรับทราบรายงานนี้แล้ว จึงแก้ไขไม่ได้</p>}
       {error && <p className="error">{error}</p>}
       {message && <p className="highlight">{message}</p>}
       <div className="actions">
         {report && (
-          <Link className="btn btn-light" to={report.status === 'submitted' ? `/reports/${report.id}/edit` : `/reports/${report.id}`}>
-            {report.status === 'submitted' ? 'เพิ่มรายละเอียด' : 'ดูรายงาน'}
+          <Link className="btn btn-light" to={`/reports/${report.id}`}>
+            ดู / พิมพ์รายงาน
           </Link>
         )}
         {!locked && (

@@ -29,7 +29,6 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
-        <Route path="reports/new" element={<ReportForm />} />
         <Route path="reports/:id" element={<ReportDetail />} />
         <Route path="reports/:id/edit" element={<ReportForm />} />
         <Route path="my-reports" element={<MyReports />} />

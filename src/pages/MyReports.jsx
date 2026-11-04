@@ -22,7 +22,6 @@ export default function MyReports() {
       <div className="actions">
         <h1>รายงานของฉัน</h1>
         <span className="spacer" />
-        <Link className="btn btn-primary" to="/reports/new">+ เขียนรายงาน</Link>
       </div>
       {error && <p className="error">{error}</p>}
       {!reports && !error && <p>กำลังโหลด...</p>}
