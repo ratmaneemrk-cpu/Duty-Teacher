@@ -1,0 +1,105 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../auth-context'
+import { saveDutyRecord } from '../data'
+import { CHECKLIST } from '../constants'
+import { errorMessage } from '../utils'
+import StatusBadge from './StatusBadge'
+
+/** ติ๊กหน้าที่ที่ปฏิบัติและบันทึกเหตุการณ์ของวันที่เป็นเวร (บันทึกเป็นรายงานเวรตลอดวัน) */
+export default function TodayDuty({ date, report, onSaved }) {
+  const { user, profile } = useAuth()
+  const [checklist, setChecklist] = useState(() =>
+    Object.fromEntries(CHECKLIST.map((c) => [c.id, Boolean(report?.checklist?.[c.id])])),
+  )
+  const [incidents, setIncidents] = useState(report?.incidents ?? '')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const locked = report?.status === 'acknowledged'
+  const done = CHECKLIST.filter((c) => checklist[c.id]).length
+
+  const toggle = (id) => {
+    setMessage('')
+    setChecklist((c) => ({ ...c, [id]: !c[id] }))
+  }
+
+  const save = async (e) => {
+    e.preventDefault()
+    setBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      const fields = { checklist, incidents: incidents.trim() || 'ปกติ' }
+      const id = await saveDutyRecord({
+        id: report?.id,
+        fields: report
+          ? fields
+          : {
+              ...fields,
+              date,
+              shift: 'allday',
+              uid: user.uid,
+              teacherName: profile.displayName,
+              teacherUsername: profile.username ?? '',
+            },
+      })
+      setMessage('บันทึกเรียบร้อยแล้ว')
+      onSaved(id)
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form className="card stack duty-today" onSubmit={save}>
+      <div className="hero">
+        <h2>บันทึกการปฏิบัติหน้าที่เวรวันนี้</h2>
+        {report && <StatusBadge status={report.status} />}
+      </div>
+      <fieldset className="field" disabled={locked}>
+        <legend>
+          หน้าที่ที่ปฏิบัติ ({done}/{CHECKLIST.length})
+        </legend>
+        <div className="checklist">
+          {CHECKLIST.map((c) => (
+            <label key={c.id} className="check">
+              <input type="checkbox" checked={checklist[c.id]} onChange={() => toggle(c.id)} />
+              <span>{c.label}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <label className="field">
+        <span>บันทึกเหตุการณ์</span>
+        <textarea
+          rows="4"
+          value={incidents}
+          onChange={(e) => {
+            setMessage('')
+            setIncidents(e.target.value)
+          }}
+          placeholder="เหตุการณ์ที่พบระหว่างปฏิบัติหน้าที่ ถ้าไม่มีให้เว้นว่าง (บันทึกเป็น &quot;ปกติ&quot;)"
+          disabled={locked}
+        />
+      </label>
+      {locked && <p className="muted small">ผู้บริหารรับทราบรายงานนี้แล้ว จึงแก้ไขไม่ได้</p>}
+      {error && <p className="error">{error}</p>}
+      {message && <p className="highlight">{message}</p>}
+      <div className="actions">
+        {report && (
+          <Link className="btn btn-light" to={report.status === 'submitted' ? `/reports/${report.id}/edit` : `/reports/${report.id}`}>
+            {report.status === 'submitted' ? 'เพิ่มรายละเอียด / รูปภาพ' : 'ดูรายงาน'}
+          </Link>
+        )}
+        {!locked && (
+          <button type="submit" className="btn btn-primary" disabled={busy}>
+            {busy ? 'กำลังบันทึก...' : 'บันทึก'}
+          </button>
+        )}
+      </div>
+    </form>
+  )
+}

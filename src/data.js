@@ -94,3 +94,23 @@ export async function listSchedulesBetween(start, end) {
   )
   return Object.fromEntries(snap.docs.map((d) => [d.id, d.data()]))
 }
+
+/** บันทึกรายการปฏิบัติหน้าที่และเหตุการณ์จากหน้าแรก (ไม่แตะรูปภาพ) */
+export async function saveDutyRecord({ id, fields }) {
+  if (id) {
+    await updateDoc(doc(db, 'reports', id), { ...fields, updatedAt: serverTimestamp() })
+    return id
+  }
+  const ref = await addDoc(reportsCol(), {
+    studentsLate: 0,
+    studentsAbsent: 0,
+    actions: '',
+    suggestions: '',
+    ...fields,
+    photoCount: 0,
+    status: 'submitted',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+  return ref.id
+}

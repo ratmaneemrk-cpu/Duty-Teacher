@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { listReportsBetween } from '../data'
 import { CHECKLIST, STATUS, shiftLabel } from '../constants'
-import { downloadCsv, errorMessage, formatThaiDate, formatThaiMonth, monthRange, thisMonthStr } from '../utils'
+import { downloadCsv, errorMessage, formatThaiDate, formatThaiMonth, monthRange, sameName, thisMonthStr } from '../utils'
 import StatusBadge from '../components/StatusBadge'
 
 export default function AllReports() {
-  const [month, setMonth] = useState(thisMonthStr)
+  // เปิดจากหน้าสรุปได้ด้วย ?teacher=ชื่อ&month=YYYY-MM
+  const [params] = useSearchParams()
+  const [month, setMonth] = useState(() => params.get('month') || thisMonthStr())
   const [statusFilter, setStatusFilter] = useState('')
+  const [teacher, setTeacher] = useState(() => params.get('teacher') ?? '')
   const [reports, setReports] = useState(null)
   const [error, setError] = useState('')
 
@@ -26,9 +29,20 @@ export default function AllReports() {
   }, [month])
 
   const shown = useMemo(
-    () => (reports ?? []).filter((r) => !statusFilter || r.status === statusFilter),
-    [reports, statusFilter],
+    () =>
+      (reports ?? []).filter(
+        (r) => (!statusFilter || r.status === statusFilter) && (!teacher || sameName(r.teacherName, teacher)),
+      ),
+    [reports, statusFilter, teacher],
   )
+
+  const teachers = useMemo(() => {
+    const names = []
+    ;[...(teacher ? [teacher] : []), ...(reports ?? []).map((r) => r.teacherName)].forEach((n) => {
+      if (n && !names.some((o) => sameName(o, n))) names.push(n)
+    })
+    return names.sort((a, b) => a.localeCompare(b, 'th'))
+  }, [reports, teacher])
 
   const summary = useMemo(
     () => ({
@@ -57,11 +71,20 @@ export default function AllReports() {
 
   return (
     <div className="card stack">
-      <h1>รายงานเวรทั้งหมด</h1>
+      <h1>รายงานการทำเวรของครู</h1>
       <div className="filters">
         <label className="field">
           <span>เดือน</span>
           <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>ครู</span>
+          <select value={teacher} onChange={(e) => setTeacher(e.target.value)}>
+            <option value="">ทุกคน</option>
+            {teachers.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
         </label>
         <label className="field">
           <span>สถานะ</span>
@@ -98,7 +121,8 @@ export default function AllReports() {
                 <th>วันที่</th>
                 <th>ช่วงเวลา</th>
                 <th>ครูเวร</th>
-                <th>มาสาย</th>
+                <th>หน้าที่</th>
+                <th>เหตุการณ์</th>
                 <th>รูป</th>
                 <th>สถานะ</th>
               </tr>
@@ -109,7 +133,8 @@ export default function AllReports() {
                   <td><Link to={`/reports/${r.id}`}>{formatThaiDate(r.date, false)}</Link></td>
                   <td>{shiftLabel(r.shift)}</td>
                   <td>{r.teacherName}</td>
-                  <td>{r.studentsLate ?? 0}</td>
+                  <td>{CHECKLIST.filter((c) => r.checklist?.[c.id]).length}/{CHECKLIST.length}</td>
+                  <td className="small">{r.incidents || '-'}</td>
                   <td>{r.photoCount || '-'}</td>
                   <td><StatusBadge status={r.status} /></td>
                 </tr>

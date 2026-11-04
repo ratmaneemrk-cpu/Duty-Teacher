@@ -35,7 +35,8 @@ export default function Layout() {
           <NavLink to="/personnel" onClick={close}>บุคลากร</NavLink>
           {isAdmin && (
             <>
-              <NavLink to="/admin/reports" onClick={close}>รายงานทั้งหมด</NavLink>
+              <NavLink to="/admin/reports" onClick={close}>รายงานการทำเวร</NavLink>
+              <NavLink to="/admin/summary" onClick={close}>สรุปการปฏิบัติหน้าที่</NavLink>
               <NavLink to="/admin/users" onClick={close}>จัดการผู้ใช้</NavLink>
             </>
           )}

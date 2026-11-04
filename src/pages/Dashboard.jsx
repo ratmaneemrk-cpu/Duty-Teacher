@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth-context'
 import { listMyReports, listReportsBetween, listSchedulesBetween } from '../data'
-import { shiftLabel } from '../constants'
+import { WEEKDAYS, shiftLabel } from '../constants'
 import { scheduleFor } from '../roster'
 import { usePersonnel } from '../personnel-context'
 import { errorMessage, formatThaiDate, parseDateStr, sameName, toDateStr, todayStr } from '../utils'
 import StatusBadge from '../components/StatusBadge'
+import TodayDuty from '../components/TodayDuty'
 
 export default function Dashboard() {
   const { user, profile, isAdmin } = useAuth()
@@ -15,6 +16,8 @@ export default function Dashboard() {
   const [myToday, setMyToday] = useState([])
   const [allToday, setAllToday] = useState([])
   const [error, setError] = useState('')
+  // เพิ่มค่าเพื่อโหลดรายงานของฉันใหม่หลังบันทึกจากหน้าแรก
+  const [reload, setReload] = useState(0)
   const today = todayStr()
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export default function Dashboard() {
       }
     }
     load()
-  }, [today, user.uid, isAdmin])
+  }, [today, user.uid, isAdmin, reload])
 
   const isMe = (t) => sameName(t.name, profile.displayName)
   const todaySchedule = scheduleFor(today, schedules, roster)
@@ -45,6 +48,11 @@ export default function Dashboard() {
     return scheduleFor(toDateStr(d), schedules, roster)
   }).filter((s) => s.teachers.some(isMe))
   const onDutyToday = todayTeachers.some(isMe)
+  // วันเวรประจำสัปดาห์ของฉันตามรายชื่อบุคลากร
+  const myWeekdays = Object.entries(roster.weekly)
+    .filter(([, names]) => names.some((n) => sameName(n, profile.displayName)))
+    .map(([day]) => WEEKDAYS[day])
+  const todayReport = myToday.find((r) => r.shift === 'allday') ?? myToday[0]
 
   return (
     <div className="stack">
@@ -52,12 +60,26 @@ export default function Dashboard() {
         <div>
           <h1>สวัสดี {profile.displayName}</h1>
           <p className="muted">{formatThaiDate(today)}</p>
+          {myWeekdays.length > 0 && (
+            <p>
+              เวรประจำของคุณ: <strong>ทุกวัน{myWeekdays.join(', วัน')}</strong>
+            </p>
+          )}
           {onDutyToday && <p className="highlight">วันนี้คุณเป็นครูเวรประจำวัน</p>}
         </div>
         <Link className="btn btn-primary btn-lg" to="/reports/new">+ เขียนรายงานเวร</Link>
       </section>
 
       {error && <p className="error">{error}</p>}
+
+      {onDutyToday && (
+        <TodayDuty
+          key={todayReport?.id ?? 'new'}
+          date={today}
+          report={todayReport}
+          onSaved={() => setReload((n) => n + 1)}
+        />
+      )}
 
       <div className="grid-2">
         <section className="card">
