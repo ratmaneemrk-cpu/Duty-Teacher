@@ -1,11 +1,15 @@
 :root {
-  --bg: #f1f5f9;
+  --bg: #f6f9ec;
   --surface: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --primary: #1d4ed8;
-  --primary-hover: #1e40af;
+  --text: #1a2e12;
+  --muted: #5f6f55;
+  --border: #dfe8d2;
+  --primary: #15803d;
+  --primary-hover: #166534;
+  --primary-soft: #ecfdf3;
+  --accent: #facc15;
+  --accent-soft: #fef9c3;
+  --accent-text: #713f12;
   --danger: #dc2626;
   --success: #16a34a;
   --warning: #d97706;
@@ -48,16 +52,29 @@ button {
 }
 
 input[type='text'],
+input[type='password'],
+input[type='tel'],
 input[type='date'],
 input[type='month'],
 input[type='number'],
 select,
 textarea {
   width: 100%;
+  min-height: 44px;
   padding: 0.55rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fff;
+  /* 16px ขึ้นไป iPhone/iPad จะไม่ซูมหน้าเว็บเมื่อแตะช่องกรอก */
+  font-size: 1rem;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--primary);
 }
 
 textarea {
@@ -80,7 +97,8 @@ code {
   align-items: center;
   gap: 0.5rem 1.5rem;
   padding: 0.6rem 1rem;
-  background: var(--primary);
+  background: linear-gradient(90deg, #166534, #15803d 60%, #4d7c0f);
+  border-bottom: 4px solid var(--accent);
   color: #fff;
 }
 
@@ -129,9 +147,14 @@ code {
   border-radius: 8px;
 }
 
-.nav a:hover,
+.nav a:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .nav a.active {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
 }
 
 .user-box {
@@ -143,7 +166,7 @@ code {
 }
 
 .container {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 1rem;
 }
@@ -218,6 +241,7 @@ code {
 /* ---------- buttons ---------- */
 .btn {
   display: inline-flex;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
   padding: 0.5rem 1rem;
@@ -259,7 +283,8 @@ code {
 }
 
 .btn-sm {
-  padding: 0.25rem 0.6rem;
+  min-height: 34px;
+  padding: 0.25rem 0.7rem;
   font-size: 0.875rem;
 }
 
@@ -296,9 +321,15 @@ code {
   cursor: pointer;
 }
 
+.check {
+  min-height: 36px;
+}
+
 .check input {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  flex-shrink: 0;
+  accent-color: var(--primary);
 }
 
 .photo-grid {
@@ -364,8 +395,8 @@ code {
   margin: 0.25rem 0 0;
   padding: 0.2rem 0.75rem;
   border-radius: 999px;
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--accent-soft);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -422,7 +453,7 @@ td {
 }
 
 th {
-  background: #f8fafc;
+  background: var(--primary-soft);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -448,7 +479,17 @@ th {
   flex-direction: column;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  background: #eff6ff;
+  background: var(--primary-soft);
+  border-left: 4px solid var(--primary);
+}
+
+.stats > div.stat-warn {
+  background: var(--accent-soft);
+  border-left-color: var(--accent);
+}
+
+.stats > div.stat-warn strong {
+  color: var(--accent-text);
 }
 
 .stats strong {
@@ -488,7 +529,7 @@ th {
 }
 
 .day.mine {
-  background: #fef9c3;
+  background: var(--accent-soft);
 }
 
 .day-head {
@@ -571,9 +612,12 @@ th {
 }
 
 /* ---------- responsive ---------- */
-@media (max-width: 760px) {
+/* iPad และมือถือ: เมนูพับเป็นปุ่ม ☰ */
+@media (max-width: 1024px) {
   .menu-btn {
     display: block;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .nav {
@@ -587,9 +631,63 @@ th {
     display: flex;
   }
 
+  .nav a {
+    padding: 0.7rem 0.9rem;
+    font-size: 1.05rem;
+  }
+
   .user-box {
     margin: 0.5rem 0 0;
     justify-content: space-between;
+  }
+}
+
+/* iPad: ฟอร์มสองคอลัมน์ ช่องติ๊กใหญ่ขึ้นสำหรับนิ้ว */
+@media (min-width: 600px) and (max-width: 1024px) {
+  .container {
+    padding: 1rem 1.25rem;
+  }
+
+  .checklist {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* มือถือ */
+@media (max-width: 600px) {
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .filters > .field,
+  .filters > .btn {
+    flex: 1 1 100%;
+  }
+
+  .hero > .btn-lg {
+    width: 100%;
+  }
+
+  .actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .checklist,
+  .checklist-view {
+    grid-template-columns: 1fr;
+    columns: 1;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .signatures {
+    grid-template-columns: 1fr;
   }
 
   .container {
@@ -632,4 +730,82 @@ th {
   flex-direction: column;
   gap: 0.3rem;
   grid-column: 1 / -1;
+}
+
+/* ---------- admin daily status ---------- */
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.date-nav input {
+  width: auto;
+}
+
+.daily-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.daily-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--primary);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.daily-item.missing {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.daily-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.daily-name {
+  font-weight: 600;
+}
+
+.daily-detail {
+  color: var(--muted);
+}
+
+.daily-incident {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.daily-side {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .daily-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .daily-side {
+    justify-content: space-between;
+  }
+
+  .date-nav input {
+    flex: 1;
+  }
 }

@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth-context'
-import { listMyReports, listReportsBetween, listSchedulesBetween } from '../data'
+import { listMyReports, listSchedulesBetween } from '../data'
 import { WEEKDAYS, shiftLabel } from '../constants'
 import { scheduleFor } from '../roster'
 import { usePersonnel } from '../personnel-context'
 import { errorMessage, formatThaiDate, parseDateStr, sameName, toDateStr, todayStr } from '../utils'
 import StatusBadge from '../components/StatusBadge'
 import TodayDuty from '../components/TodayDuty'
+import DailyStatus from '../components/DailyStatus'
 
 export default function Dashboard() {
   const { user, profile, isAdmin } = useAuth()
   const { roster } = usePersonnel()
   const [schedules, setSchedules] = useState({})
   const [myToday, setMyToday] = useState([])
-  const [allToday, setAllToday] = useState([])
   const [error, setError] = useState('')
   // เพิ่มค่าเพื่อโหลดรายงานของฉันใหม่หลังบันทึกจากหน้าแรก
   const [reload, setReload] = useState(0)
@@ -31,13 +31,12 @@ export default function Dashboard() {
         ])
         setSchedules(sch)
         setMyToday(mine.filter((r) => r.date === today))
-        if (isAdmin) setAllToday(await listReportsBetween(today, today))
       } catch (err) {
         setError(errorMessage(err))
       }
     }
     load()
-  }, [today, user.uid, isAdmin, reload])
+  }, [today, user.uid, reload])
 
   const isMe = (t) => sameName(t.name, profile.displayName)
   const todaySchedule = scheduleFor(today, schedules, roster)
@@ -53,22 +52,28 @@ export default function Dashboard() {
     .filter(([, names]) => names.some((n) => sameName(n, profile.displayName)))
     .map(([day]) => WEEKDAYS[day])
   const todayReport = myToday.find((r) => r.shift === 'allday') ?? myToday[0]
+  // ผู้ดูแลที่ไม่มีเวร ไม่ต้องแสดงส่วนของครูเวร
+  const showTeacherView = !isAdmin || onDutyToday || myWeekdays.length > 0 || myUpcoming.length > 0
 
   return (
     <div className="stack">
-      <section className="card hero">
-        <div>
-          <h1>สวัสดี {profile.displayName}</h1>
-          <p className="muted">{formatThaiDate(today)}</p>
-          {myWeekdays.length > 0 && (
-            <p>
-              เวรประจำของคุณ: <strong>ทุกวัน{myWeekdays.join(', วัน')}</strong>
-            </p>
-          )}
-          {onDutyToday && <p className="highlight">วันนี้คุณเป็นครูเวรประจำวัน</p>}
-        </div>
-        <Link className="btn btn-primary btn-lg" to="/reports/new">+ เขียนรายงานเวร</Link>
-      </section>
+      {isAdmin && <DailyStatus />}
+
+      {showTeacherView && (
+        <section className="card hero">
+          <div>
+            <h1>สวัสดี {profile.displayName}</h1>
+            <p className="muted">{formatThaiDate(today)}</p>
+            {myWeekdays.length > 0 && (
+              <p>
+                เวรประจำของคุณ: <strong>ทุกวัน{myWeekdays.join(', วัน')}</strong>
+              </p>
+            )}
+            {onDutyToday && <p className="highlight">วันนี้คุณเป็นครูเวรประจำวัน</p>}
+          </div>
+          <Link className="btn btn-primary btn-lg" to="/reports/new">+ เขียนรายงานเวร</Link>
+        </section>
+      )}
 
       {error && <p className="error">{error}</p>}
 
@@ -81,71 +86,55 @@ export default function Dashboard() {
         />
       )}
 
-      <div className="grid-2">
-        <section className="card">
-          <h2>ครูเวรวันนี้</h2>
-          {todayTeachers.length ? (
-            <ul className="plain-list">
-              {todayTeachers.map((t) => (
-                <li key={t.name}>
-                  {t.name}
-                  {t.head && <strong> (หัวหน้าครูเวร)</strong>}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted">วันนี้ไม่มีเวร</p>
+      {showTeacherView && (
+        <div className="grid-2">
+          {!isAdmin && (
+            <section className="card">
+              <h2>ครูเวรวันนี้</h2>
+              {todayTeachers.length ? (
+                <ul className="plain-list">
+                  {todayTeachers.map((t) => (
+                    <li key={t.name}>
+                      {t.name}
+                      {t.head && <strong> (หัวหน้าครูเวร)</strong>}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">วันนี้ไม่มีเวร</p>
+              )}
+              {todaySchedule.note && <p className="note">หมายเหตุ: {todaySchedule.note}</p>}
+            </section>
           )}
-          {todaySchedule.note && <p className="note">หมายเหตุ: {todaySchedule.note}</p>}
-        </section>
 
-        <section className="card">
-          <h2>เวรของฉันใน 14 วันข้างหน้า</h2>
-          {myUpcoming.length ? (
-            <ul className="plain-list">
-              {myUpcoming.map((s) => (
-                <li key={s.date}>{formatThaiDate(s.date)}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted">ไม่มีเวร</p>
-          )}
-        </section>
-      </div>
+          <section className="card">
+            <h2>เวรของฉันใน 14 วันข้างหน้า</h2>
+            {myUpcoming.length ? (
+              <ul className="plain-list">
+                {myUpcoming.map((s) => (
+                  <li key={s.date}>{formatThaiDate(s.date)}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted">ไม่มีเวร</p>
+            )}
+          </section>
 
-      <section className="card">
-        <h2>รายงานของฉันวันนี้</h2>
-        {myToday.length ? (
-          <ul className="plain-list">
-            {myToday.map((r) => (
-              <li key={r.id}>
-                <Link to={`/reports/${r.id}`}>{shiftLabel(r.shift)}</Link> <StatusBadge status={r.status} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted">ยังไม่ได้ส่งรายงานวันนี้</p>
-        )}
-      </section>
-
-      {isAdmin && (
-        <section className="card">
-          <h2>รายงานทั้งหมดวันนี้ ({allToday.length})</h2>
-          {allToday.length ? (
-            <ul className="plain-list">
-              {allToday.map((r) => (
-                <li key={r.id}>
-                  <Link to={`/reports/${r.id}`}>
-                    {r.teacherName} — {shiftLabel(r.shift)}
-                  </Link>{' '}
-                  <StatusBadge status={r.status} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted">ยังไม่มีรายงาน</p>
-          )}
-        </section>
+          <section className="card">
+            <h2>รายงานของฉันวันนี้</h2>
+            {myToday.length ? (
+              <ul className="plain-list">
+                {myToday.map((r) => (
+                  <li key={r.id}>
+                    <Link to={`/reports/${r.id}`}>{shiftLabel(r.shift)}</Link> <StatusBadge status={r.status} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted">ยังไม่ได้ส่งรายงานวันนี้</p>
+            )}
+          </section>
+        </div>
       )}
     </div>
   )
