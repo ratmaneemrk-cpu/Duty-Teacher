@@ -97,7 +97,7 @@ export default function Dashboard() {
                 เวรประจำของคุณ: <strong>ทุกวัน{myWeekdays.join(', วัน')}</strong>
               </p>
             )}
-            {onDutyToday && <p className="highlight">วันนี้คุณเป็นครูเวรประจำวัน</p>}
+            {onDutyToday && <p className="duty-banner">📣 วันนี้คุณเป็นครูเวรประจำวัน</p>}
           </div>
         </section>
       )}

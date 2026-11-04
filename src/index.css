@@ -1050,3 +1050,42 @@ th {
     flex: 1 1 auto;
   }
 }
+
+/* ป้าย "วันนี้คุณเป็นครูเวรประจำวัน" ให้เห็นชัด */
+.duty-banner {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-text);
+  border: 3px solid #eab308;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(202, 138, 4, 0.35);
+  animation: duty-pulse 2s ease-in-out infinite;
+}
+
+@keyframes duty-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .duty-banner {
+    animation: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .duty-banner {
+    font-size: 1.3rem;
+    padding: 0.6rem 0.9rem;
+  }
+}
